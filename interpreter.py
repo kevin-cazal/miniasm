@@ -120,28 +120,24 @@ class Machine:
 
 
 @dataclass
-class LDR(Instruction):
-    x: Register
-    y: Union[Immediate, Register, MemoryAddress]
+class SET(Instruction):
+    """SET dest, src — dest and src can be Reg, Mem, or (src only) Immediate."""
+    dest: Union[Register, MemoryAddress]
+    src: Union[Register, MemoryAddress, Immediate]
+
+    def _get_value(self, machine: Machine, operand: Union[Register, MemoryAddress, Immediate]) -> int:
+        if isinstance(operand, Register):
+            return machine.registers[operand]
+        if isinstance(operand, MemoryAddress):
+            return machine.memory[operand]
+        return int(operand)  # Immediate
 
     def execute(self, machine: Machine) -> None:
-        if isinstance(self.y, Register):
-            machine.registers[self.x] = machine.registers[self.y]
-        elif isinstance(self.y, MemoryAddress):
-            machine.registers[self.x] = machine.memory[self.y]
-        elif isinstance(self.y, Immediate):
-            machine.registers[self.x] = self.y
-
-@dataclass
-class STM(Instruction):
-    x: MemoryAddress
-    y: Union[Register, Immediate]
-
-    def execute(self, machine: Machine) -> None:
-        if isinstance(self.y, Register):
-            machine.memory[self.x] = machine.registers[self.y]
-        elif isinstance(self.y, Immediate):
-            machine.memory[self.x] = self.y
+        value = self._get_value(machine, self.src)
+        if isinstance(self.dest, Register):
+            machine.registers[self.dest] = value
+        else:
+            machine.memory[self.dest] = value
 
 @dataclass
 class INC(Instruction):
@@ -165,6 +161,15 @@ class ISZ(Instruction):
         if machine.registers[self.x] == 0:
             machine.pc += 1
 
+@dataclass
+class ISN(Instruction):
+    """Skip next instruction if register is negative."""
+    x: Register
+
+    def execute(self, machine: Machine) -> None:
+        if machine.registers[self.x] < 0:
+            machine.pc += 1
+
 class STP(Instruction):
     def execute(self, machine: Machine) -> None:
         machine.halted = True
@@ -178,13 +183,9 @@ class JMP(Instruction):
 
 
 Inst = {
-    "LDR": {
-        "args": [Register, Union[Register, MemoryAddress, Immediate]],
-        "inst": LDR
-    },
-    "STM": {
-        "args": [MemoryAddress, Union[Register, Immediate]],
-        "inst": STM
+    "SET": {
+        "args": [Union[Register, MemoryAddress], Union[Register, MemoryAddress, Immediate]],
+        "inst": SET
     },
     "INC": {
         "args": [Register],
@@ -197,6 +198,10 @@ Inst = {
     "ISZ": {
         "args": [Register],
         "inst": ISZ
+    },
+    "ISN": {
+        "args": [Register],
+        "inst": ISN
     },
     "STP": {
         "args": [],
