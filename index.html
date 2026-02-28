@@ -235,6 +235,7 @@
       let machine = null;
       let decorations = [];
       let currentMode = 'code'; // 'code' | 'blocks'
+      let syncHighlightTimeout = null;
 
       function getSource() {
         if (currentMode === 'code' && editor) return editor.getValue();
@@ -381,6 +382,35 @@
           : []);
       }
 
+      function clampPC() {
+        if (!machine || !machine.code.length) return;
+        machine.pc = Math.max(0, Math.min(machine.pc, machine.code.length - 1));
+      }
+
+      function syncProgramAndHighlightPC() {
+        if (!machine) machine = createMachine();
+        var source = getSource();
+        try {
+          window.MiniASM.loadProgram(machine, { source: source });
+          clampPC();
+          refreshTables();
+          updateStatus();
+          if (currentMode === 'blocks' && blocklyWorkspace && editor) {
+            editor.setValue(source);
+          }
+          if (currentMode === 'code' && blocklyWorkspace && editor) {
+            window.MiniASMBlocks.codeToBlocks(blocklyWorkspace, source);
+          }
+        } catch (e) {
+          // Parse error while editing – keep current machine state
+        }
+        highlightPCLine();
+        if (currentMode === 'blocks' && blocklyWorkspace) {
+          window.MiniASMBlocks.updateBlockLineNumbers(blocklyWorkspace);
+          window.MiniASMBlocks.setPCIndicator(blocklyWorkspace, machine ? machine.pc : -1);
+        }
+      }
+
       function run() {
         if (!loadProgram()) return;
         window.MiniASM.run(machine);
@@ -437,11 +467,17 @@
         if (mode === 'blocks') {
           if (!blocklyWorkspace) {
             blocklyWorkspace = window.MiniASMBlocks.createWorkspace(document.getElementById('blockly-workspace'));
+            blocklyWorkspace.addChangeListener(function() {
+              clearTimeout(syncHighlightTimeout);
+              syncHighlightTimeout = setTimeout(syncProgramAndHighlightPC, 200);
+            });
           }
           window.MiniASMBlocks.codeToBlocks(blocklyWorkspace, editor ? editor.getValue() : '');
           if (machine) {
             window.MiniASMBlocks.setPCIndicator(blocklyWorkspace, machine.pc);
           }
+          window.MiniASMBlocks.centerBlocksInView(blocklyWorkspace);
+          window.MiniASMBlocks.updateBlockLineNumbers(blocklyWorkspace);
         } else {
           if (blocklyWorkspace && editor) {
             editor.setValue(window.MiniASMBlocks.blocksToCode(blocklyWorkspace));
@@ -483,7 +519,11 @@
           editor.updateOptions({ lineNumbers: lineNumbersForLine });
         }
         applyLineNumberOption();
-        editor.getModel().onDidChangeContent(applyLineNumberOption);
+        editor.getModel().onDidChangeContent(function() {
+          applyLineNumberOption();
+          clearTimeout(syncHighlightTimeout);
+          syncHighlightTimeout = setTimeout(syncProgramAndHighlightPC, 200);
+        });
         const style = document.createElement('style');
         style.textContent = '.pc-line-highlight { background: rgba(249, 226, 175, 0.15); }';
         document.head.appendChild(style);

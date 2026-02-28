@@ -18,9 +18,14 @@
     }
   };
 
+  var lineNumField = function() {
+    return new (Blockly.FieldLabelSerializable || Blockly.FieldLabel)('0', 'line_num');
+  };
+
   Blockly.Blocks['miniasm_set'] = {
     init: function() {
       this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
           .appendField('set')
           .appendField(new Blockly.FieldDropdown([['reg', 'reg'], ['mem', 'mem']]), 'DEST_TYPE')
           .appendField(new Blockly.FieldTextInput('0'), 'DEST_VAL');
@@ -37,6 +42,7 @@
   Blockly.Blocks['miniasm_inc'] = {
     init: function() {
       this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
           .appendField('INC')
           .appendField(new Blockly.FieldDropdown(regOptions), 'REG');
       this.setPreviousStatement(true, null);
@@ -48,6 +54,7 @@
   Blockly.Blocks['miniasm_dec'] = {
     init: function() {
       this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
           .appendField('DEC')
           .appendField(new Blockly.FieldDropdown(regOptions), 'REG');
       this.setPreviousStatement(true, null);
@@ -59,6 +66,7 @@
   Blockly.Blocks['miniasm_isz'] = {
     init: function() {
       this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
           .appendField('ISZ (skip next if zero)')
           .appendField(new Blockly.FieldDropdown(regOptions), 'REG');
       this.setPreviousStatement(true, null);
@@ -70,6 +78,7 @@
   Blockly.Blocks['miniasm_isn'] = {
     init: function() {
       this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
           .appendField('ISN (skip next if negative)')
           .appendField(new Blockly.FieldDropdown(regOptions), 'REG');
       this.setPreviousStatement(true, null);
@@ -81,6 +90,7 @@
   Blockly.Blocks['miniasm_jmp'] = {
     init: function() {
       this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
           .appendField('JMP line')
           .appendField(new Blockly.FieldNumber(0, 0, 999), 'LINE');
       this.setPreviousStatement(true, null);
@@ -91,7 +101,9 @@
 
   Blockly.Blocks['miniasm_stp'] = {
     init: function() {
-      this.appendDummyInput().appendField('STP (stop)');
+      this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
+          .appendField('STP (stop)');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(30);
@@ -183,6 +195,7 @@
     blockXml.appendChild(startEl);
     try {
       Blockly.Xml.domToWorkspace(blockXml, workspace);
+      updateBlockLineNumbers(workspace);
     } catch (e) {
       console.warn('codeToBlocks:', e);
     }
@@ -300,11 +313,52 @@
     }
   }
 
+  function updateBlockLineNumbers(workspace) {
+    if (!workspace) return;
+    var topBlocks = workspace.getTopBlocks(true);
+    var startBlock = null;
+    for (var i = 0; i < topBlocks.length; i++) {
+      if (topBlocks[i].type === 'miniasm_start') {
+        startBlock = topBlocks[i];
+        break;
+      }
+    }
+    var block = startBlock && startBlock.getNextBlock ? startBlock.getNextBlock() : null;
+    var lineNum = 1;
+    while (block) {
+      if (block.type !== 'miniasm_start' && generator[block.type]) {
+        var field = block.getField('LINE_NUM');
+        if (field && typeof field.setValue === 'function') {
+          field.setValue(String(lineNum));
+        }
+        lineNum++;
+      }
+      block = block.getNextBlock ? block.getNextBlock() : null;
+    }
+  }
+
+  function centerBlocksInView(workspace) {
+    if (!workspace) return;
+    var topBlocks = workspace.getTopBlocks(true);
+    var startBlock = null;
+    for (var i = 0; i < topBlocks.length; i++) {
+      if (topBlocks[i].type === 'miniasm_start') {
+        startBlock = topBlocks[i];
+        break;
+      }
+    }
+    if (startBlock && typeof workspace.centerOnBlock === 'function') {
+      workspace.centerOnBlock(startBlock.id, false);
+    }
+  }
+
   global.MiniASMBlocks = {
     blocksToCode: blocksToCode,
     codeToBlocks: codeToBlocks,
     createWorkspace: createWorkspace,
     getBlockAtLineIndex: getBlockAtLineIndex,
-    setPCIndicator: setPCIndicator
+    setPCIndicator: setPCIndicator,
+    updateBlockLineNumbers: updateBlockLineNumbers,
+    centerBlocksInView: centerBlocksInView
   };
 })(typeof window !== 'undefined' ? window : this);
