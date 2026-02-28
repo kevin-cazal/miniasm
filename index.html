@@ -393,7 +393,6 @@
         try {
           window.MiniASM.loadProgram(machine, { source: source });
           clampPC();
-          refreshTables();
           updateStatus();
           if (currentMode === 'blocks' && blocklyWorkspace && editor) {
             editor.setValue(source);

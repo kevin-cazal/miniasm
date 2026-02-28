@@ -26,7 +26,7 @@
     init: function() {
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
-          .appendField('set')
+          .appendField('SET')
           .appendField(new Blockly.FieldDropdown([['reg', 'reg'], ['mem', 'mem']]), 'DEST_TYPE')
           .appendField(new Blockly.FieldTextInput('0'), 'DEST_VAL');
       this.appendDummyInput()
