@@ -372,10 +372,13 @@
 
       function highlightPCLine() {
         if (!editor || !machine) return;
-        const line = machine.pc + 1;
-        decorations = editor.deltaDecorations(decorations, [
-          { range: { startLineNumber: line, startColumn: 1, endLineNumber: line, endColumn: 1 }, options: { isWholeLine: true, className: 'pc-line-highlight' } }
-        ]);
+        const validPC = machine.pc >= 0 && machine.pc < machine.code.length;
+        const line = validPC && machine.lineNumbers && machine.lineNumbers[machine.pc] !== undefined
+          ? machine.lineNumbers[machine.pc]
+          : null;
+        decorations = editor.deltaDecorations(decorations, line != null
+          ? [{ range: { startLineNumber: line, startColumn: 1, endLineNumber: line, endColumn: 1 }, options: { isWholeLine: true, className: 'pc-line-highlight' } }]
+          : []);
       }
 
       function run() {
@@ -408,12 +411,20 @@
       }
 
       function reset() {
-        machine = null;
+        try {
+          machine = createMachine();
+          loadProgram(machine, { source: getSource() });
+        } catch (e) {
+          machine = null;
+        }
         refreshTables();
         updateStatus();
-        decorations = editor ? editor.deltaDecorations(decorations, []) : [];
+        if (!machine) {
+          decorations = editor ? editor.deltaDecorations(decorations, []) : [];
+        }
+        highlightPCLine();
         if (currentMode === 'blocks' && blocklyWorkspace) {
-          window.MiniASMBlocks.setPCIndicator(blocklyWorkspace, -1);
+          window.MiniASMBlocks.setPCIndicator(blocklyWorkspace, machine ? machine.pc : -1);
         }
       }
 
@@ -434,6 +445,9 @@
         } else {
           if (blocklyWorkspace && editor) {
             editor.setValue(window.MiniASMBlocks.blocksToCode(blocklyWorkspace));
+          }
+          if (machine) {
+            highlightPCLine();
           }
         }
       }
@@ -477,6 +491,7 @@
         loadProgram();
         refreshTables();
         updateStatus();
+        highlightPCLine();
       });
     })();
   </script>
