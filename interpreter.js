@@ -53,7 +53,7 @@ const INST = {
   },
   JMP: {
     args: [['LineNumber']],
-    run(m, line) { m.pc = line.value; }
+    run(m, line) { m.pc = line.value - 1; }  // source line numbers are 1-based (l1=first, l2=second, …)
   }
 };
 
@@ -100,11 +100,12 @@ function parseInstruction(line) {
 }
 
 function createMachine() {
+  const rand = () => Math.floor(Math.random() * 256);
   return {
     instructions: [],
     code: [],
-    registers: { [Register.R0]: 0, [Register.R1]: 0, [Register.R2]: 0, [Register.R3]: 0 },
-    memory: Array(64).fill(0),
+    registers: { [Register.R0]: rand(), [Register.R1]: rand(), [Register.R2]: rand(), [Register.R3]: rand() },
+    memory: Array.from({ length: 64 }, rand),
     pc: 0,
     halted: false
   };

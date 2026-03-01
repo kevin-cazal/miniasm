@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Union, get_args
@@ -29,8 +30,8 @@ class Register(Enum):
 class Machine:
     instructions: list[str]
     code: list[Instruction]
-    registers: dict[Register, int] = field(default_factory=lambda: {r: 0 for r in Register})
-    memory: list[int] = field(default_factory=lambda: [0] * 64)
+    registers: dict[Register, int] = field(default_factory=lambda: {r: random.randint(0, 255) for r in Register})
+    memory: list[int] = field(default_factory=lambda: [random.randint(0, 255) for _ in range(64)])
     pc: int = 0
     halted: bool = False
 
@@ -179,7 +180,7 @@ class JMP(Instruction):
     x: LineNumber
 
     def execute(self, machine: Machine) -> None:
-        machine.pc = self.x
+        machine.pc = self.x - 1  # source line numbers are 1-based (l1=first, l2=second, …)
 
 
 Inst = {
