@@ -11,7 +11,7 @@ class MemoryAddress(int):
     """A memory address."""
     pass
 
-class LineNumber(int):
+class InstructionNumber(int):
     """A line number."""
     pass
 
@@ -47,7 +47,7 @@ class Machine:
             "r": Register,
             "#": Immediate,
             "@": MemoryAddress,
-            "l": LineNumber
+            "l": InstructionNumber
         }
         tokens = [*filter(None, map(lambda x: x.strip(), line.split(" ")))]
         try:
@@ -177,7 +177,7 @@ class STP(Instruction):
 
 @dataclass
 class JMP(Instruction):
-    x: LineNumber
+    x: InstructionNumber
 
     def execute(self, machine: Machine) -> None:
         machine.pc = self.x - 1  # source line numbers are 1-based (l1=first, l2=second, …)
@@ -209,7 +209,7 @@ Inst = {
         "inst": STP
     },
     "JMP": {
-        "args": [LineNumber],
+        "args": [InstructionNumber],
         "inst": JMP
     },
 }

@@ -15,7 +15,7 @@ function parseOperand(token) {
     case 'r': return { type: 'Register', value };
     case '#': return { type: 'Immediate', value };
     case '@': return { type: 'MemoryAddress', value };
-    case 'l': return { type: 'LineNumber', value };
+    case 'l': return { type: 'InstructionNumber', value };
     default: throw new Error(`Unknown token prefix: ${prefix}`);
   }
 }
@@ -47,12 +47,24 @@ const INST = {
     args: [['Register']],
     run(m, x) { if (m.registers[x.value] < 0) m.pc += 1; }
   },
+  ADD: {
+    args: [['Register'], ['Register']],
+    run(m, x, y) { m.registers[x.value] += m.registers[y.value]; }
+  },
+  MUL: {
+    args: [['Register'], ['Register']],
+    run(m, x, y) { m.registers[x.value] *= m.registers[y.value]; }
+  },
+  POW: {
+    args: [['Register'], ['Register']],
+    run(m, x, y) { m.registers[x.value] = Math.pow(m.registers[x.value], m.registers[y.value]); }
+  },
   STP: {
     args: [],
     run(m) { m.halted = true; }
   },
   JMP: {
-    args: [['LineNumber']],
+    args: [['InstructionNumber']],
     run(m, line) { m.pc = line.value - 1; }  // source line numbers are 1-based (l1=first, l2=second, …)
   }
 };

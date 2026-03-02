@@ -1,20 +1,25 @@
 /**
  * MiniASM Blockly blocks and code generator (Scratch-like block mode).
+ * Supports dynamic toolbox — only shows blocks for allowed opcodes.
+ * Depends on: lang.js
  */
 (function(global) {
   var Blockly = global.Blockly;
   if (!Blockly) return;
+
+  var T = global.MiniASMLang.T;
 
   var regOptions = [['0', '0'], ['1', '1'], ['2', '2'], ['3', '3']];
 
   // ----- Block definitions -----
   Blockly.Blocks['miniasm_start'] = {
     init: function() {
-      this.appendDummyInput().appendField('start');
+      this.appendDummyInput().appendField(T('blockStart'));
       this.setNextStatement(true, null);
       this.setPreviousStatement(false);
       this.setDeletable(false);
       this.setColour(120);
+      this.setTooltip(T('tooltipStart'));
     }
   };
 
@@ -30,12 +35,13 @@
           .appendField(new Blockly.FieldDropdown([['reg', 'reg'], ['mem', 'mem']]), 'DEST_TYPE')
           .appendField(new Blockly.FieldTextInput('0'), 'DEST_VAL');
       this.appendDummyInput()
-          .appendField('to')
+          .appendField(T('blockTo'))
           .appendField(new Blockly.FieldDropdown([['reg', 'reg'], ['mem', 'mem'], ['#', '#']]), 'SRC_TYPE')
           .appendField(new Blockly.FieldTextInput('0'), 'SRC_VAL');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
+      this.setTooltip(T('tooltipSet'));
     }
   };
 
@@ -48,6 +54,7 @@
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(160);
+      this.setTooltip(T('tooltipInc'));
     }
   };
 
@@ -60,6 +67,7 @@
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(160);
+      this.setTooltip(T('tooltipDec'));
     }
   };
 
@@ -67,11 +75,12 @@
     init: function() {
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
-          .appendField('ISZ (skip next if zero)')
+          .appendField('ISZ')
           .appendField(new Blockly.FieldDropdown(regOptions), 'REG');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(290);
+      this.setTooltip(T('tooltipIsz'));
     }
   };
 
@@ -79,11 +88,12 @@
     init: function() {
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
-          .appendField('ISN (skip next if negative)')
+          .appendField('ISN')
           .appendField(new Blockly.FieldDropdown(regOptions), 'REG');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(290);
+      this.setTooltip(T('tooltipIsn'));
     }
   };
 
@@ -91,11 +101,12 @@
     init: function() {
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
-          .appendField('JMP line')
+          .appendField('JMP')
           .appendField(new Blockly.FieldNumber(0, 0, 999), 'LINE');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(290);
+      this.setTooltip(T('tooltipJmp'));
     }
   };
 
@@ -103,10 +114,57 @@
     init: function() {
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
-          .appendField('STP (stop)');
+          .appendField('STP');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(30);
+      this.setTooltip(T('tooltipStp'));
+    }
+  };
+
+  // ----- Unlockable instruction blocks -----
+  Blockly.Blocks['miniasm_add'] = {
+    init: function() {
+      this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
+          .appendField('ADD  r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'X')
+          .appendField(' r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'Y');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip(T('tooltipAdd'));
+    }
+  };
+
+  Blockly.Blocks['miniasm_mul'] = {
+    init: function() {
+      this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
+          .appendField('MUL  r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'X')
+          .appendField(' r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'Y');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip(T('tooltipMul'));
+    }
+  };
+
+  Blockly.Blocks['miniasm_pow'] = {
+    init: function() {
+      this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
+          .appendField('POW  r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'X')
+          .appendField(' r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'Y');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip(T('tooltipPow'));
     }
   };
 
@@ -139,7 +197,17 @@
   generator['miniasm_stp'] = function() {
     return 'STP';
   };
+  generator['miniasm_add'] = function(block) {
+    return 'ADD r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
+  };
+  generator['miniasm_mul'] = function(block) {
+    return 'MUL r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
+  };
+  generator['miniasm_pow'] = function(block) {
+    return 'POW r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
+  };
 
+  // ----- blocksToCode -----
   function blocksToCode(workspace) {
     var lines = [];
     var topBlocks = workspace.getTopBlocks(true);
@@ -172,6 +240,7 @@
     return lines.join('\n');
   }
 
+  // ----- codeToBlocks -----
   function codeToBlocks(workspace, code) {
     workspace.clear();
     var lines = (code || '').split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
@@ -239,6 +308,10 @@
       return { type: 'miniasm_jmp', LINE: isNaN(lineNum) ? 0 : lineNum };
     }
     if (op === 'STP') return { type: 'miniasm_stp' };
+    // Unlockable instructions
+    if (op === 'ADD' && tokens.length >= 3) return { type: 'miniasm_add', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
+    if (op === 'MUL' && tokens.length >= 3) return { type: 'miniasm_mul', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
+    if (op === 'POW' && tokens.length >= 3) return { type: 'miniasm_pow', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
     return null;
   }
 
@@ -257,32 +330,75 @@
     return block;
   }
 
-  var toolboxXml = [
-    '<xml xmlns="https://developers.google.com/blockly/xml">',
-    '  <category name="Data">',
-    '    <block type="miniasm_set"></block>',
-    '  </category>',
-    '  <category name="Arithmetic">',
-    '    <block type="miniasm_inc"></block>',
-    '    <block type="miniasm_dec"></block>',
-    '  </category>',
-    '  <category name="Control">',
-    '    <block type="miniasm_isz"></block>',
-    '    <block type="miniasm_isn"></block>',
-    '    <block type="miniasm_jmp"></block>',
-    '    <block type="miniasm_stp"></block>',
-    '  </category>',
-    '</xml>'
-  ].join('');
+  // ----- Dynamic toolbox -----
+  // Maps opcodes to their Blockly block type
+  var OPCODE_TO_BLOCK = {
+    SET: 'miniasm_set',
+    INC: 'miniasm_inc',
+    DEC: 'miniasm_dec',
+    ISZ: 'miniasm_isz',
+    ISN: 'miniasm_isn',
+    JMP: 'miniasm_jmp',
+    STP: 'miniasm_stp',
+    ADD: 'miniasm_add',
+    MUL: 'miniasm_mul',
+    POW: 'miniasm_pow',
+  };
 
-  function createWorkspace(container) {
+  // Category structure (opcodes grouped by category, with lang keys)
+  var CATEGORIES = [
+    { nameKey: 'catData',       opcodes: ['SET'] },
+    { nameKey: 'catArithmetic', opcodes: ['INC', 'DEC', 'ADD', 'MUL', 'POW'] },
+    { nameKey: 'catControl',    opcodes: ['ISZ', 'ISN', 'JMP', 'STP'] },
+  ];
+
+  /**
+   * Build a Blockly toolbox XML string showing only allowed opcodes.
+   * If allowedOpcodes is null/undefined, all opcodes are shown.
+   */
+  function buildToolboxXml(allowedOpcodes) {
+    var xml = '<xml xmlns="https://developers.google.com/blockly/xml">';
+    for (var c = 0; c < CATEGORIES.length; c++) {
+      var cat = CATEGORIES[c];
+      var blocks = [];
+      for (var o = 0; o < cat.opcodes.length; o++) {
+        var op = cat.opcodes[o];
+        if (!allowedOpcodes || allowedOpcodes.indexOf(op) !== -1) {
+          blocks.push(OPCODE_TO_BLOCK[op]);
+        }
+      }
+      if (blocks.length > 0) {
+        xml += '<category name="' + T(cat.nameKey) + '">';
+        for (var b = 0; b < blocks.length; b++) {
+          xml += '<block type="' + blocks[b] + '"></block>';
+        }
+        xml += '</category>';
+      }
+    }
+    xml += '</xml>';
+    return xml;
+  }
+
+  /**
+   * Update a workspace's toolbox to show only the given opcodes.
+   */
+  function updateToolbox(workspace, allowedOpcodes) {
+    if (!workspace) return;
+    var xml = buildToolboxXml(allowedOpcodes);
+    workspace.updateToolbox(xml);
+  }
+
+  // ----- Workspace creation -----
+  function createWorkspace(container, allowedOpcodes) {
+    var toolbox = buildToolboxXml(allowedOpcodes);
     return Blockly.inject(container, {
-      toolbox: toolboxXml,
+      toolbox: toolbox,
       grid: { spacing: 20, length: 3, colour: '#313244', snap: true },
       zoom: { controls: true, wheel: true, startScale: 1, maxScale: 2, minScale: 0.5 }
     });
   }
 
+  // ----- PC indicator & line numbers -----
   function getBlockAtLineIndex(workspace, index) {
     if (!workspace || index < 0) return null;
     var topBlocks = workspace.getTopBlocks(true);
@@ -359,6 +475,8 @@
     getBlockAtLineIndex: getBlockAtLineIndex,
     setPCIndicator: setPCIndicator,
     updateBlockLineNumbers: updateBlockLineNumbers,
-    centerBlocksInView: centerBlocksInView
+    centerBlocksInView: centerBlocksInView,
+    buildToolboxXml: buildToolboxXml,
+    updateToolbox: updateToolbox
   };
 })(typeof window !== 'undefined' ? window : this);
