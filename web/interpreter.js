@@ -47,6 +47,18 @@ const INST = {
     args: [['Register']],
     run(m, x) { if (m.registers[x.value] < 0) m.pc += 1; }
   },
+  ADD: {
+    args: [['Register'], ['Register']],
+    run(m, x, y) { m.registers[x.value] += m.registers[y.value]; }
+  },
+  MUL: {
+    args: [['Register'], ['Register']],
+    run(m, x, y) { m.registers[x.value] *= m.registers[y.value]; }
+  },
+  POW: {
+    args: [['Register'], ['Register']],
+    run(m, x, y) { m.registers[x.value] = Math.pow(m.registers[x.value], m.registers[y.value]); }
+  },
   STP: {
     args: [],
     run(m) { m.halted = true; }
