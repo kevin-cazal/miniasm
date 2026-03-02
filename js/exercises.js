@@ -1,16 +1,17 @@
 /**
- * MiniASM Exercise System — progressive challenges for the web IDE.
+ * WDR+E Challenge System — progressive challenges for the web IDE.
  * Depends on: lang.js
  *
- * ─── HOW TO ADD A NEW EXERCISE ────────────────────────────────────────
- *  1. Add the exercise text (name, title, goal, description, hints,
+ * ─── HOW TO ADD A NEW CHALLENGE ───────────────────────────────────────
+ *  1. Add the challenge text (name, title, goal, description, hints,
  *     starterCode) to each language in lang.js under exercises[id].
- *  2. Append a new data object to EXERCISE_DATA below (id, available,
- *     unlocks, tests).
- *  3. If the exercise unlocks a new instruction, make sure that
+ *  2. Add a category to CATEGORIES (if needed).
+ *  3. Append a new data object to EXERCISE_DATA below (id, category,
+ *     type, available, unlocks, tests).
+ *  4. If the challenge unlocks a new instruction, make sure that
  *     instruction is defined in interpreter.js (INST object) and
  *     has a corresponding Blockly block in blocks-miniasm.js.
- *  4. That's it! Navigation, progress, testing, and unlocking
+ *  5. That's it! Navigation, progress, testing, and unlocking
  *     are all handled automatically.
  * ──────────────────────────────────────────────────────────────────────
  */
@@ -24,17 +25,83 @@
   // Primitive instructions — always available
   var PRIMITIVES = ['SET', 'INC', 'DEC', 'ISZ', 'ISN', 'STP', 'JMP'];
 
+  // ─── Categories ─────────────────────────────────────────────────────
+  //
+  // Each category groups related tutorials and challenges.
+  // Add new categories here; items reference them via `category`.
+  var CATEGORIES = [
+    { id: 'arithmetic', name: 'Arithmetic' },
+  ];
+
   // ─── Exercise data (structural / non-translatable) ─────────────────
   //
   // Each entry has:
   //   id          – unique number (determines ordering & prerequisite chain)
+  //   category    – category id (matches CATEGORIES[].id)
+  //   type        – 'tutorial' | 'challenge'
   //   available   – array of opcode strings the learner may use
   //   unlocks     – opcode string unlocked on completion (or null)
   //   tests       – array of { inputs, expected } — keys are 'r0'..'r3' or '@0'..'@63'
 
+  var LOOP_PRIMITIVES = ['INC', 'DEC', 'ISZ', 'ISN', 'STP', 'JMP'];
+
   var EXERCISE_DATA = [
+    // ─── Tutorials (0–3) ──────────────────────────────────────────
+    {
+      id: 0,
+      category: 'arithmetic',
+      type: 'tutorial',
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: {},               expected: { r0: 42 } },
+        { inputs: { r1: 5 },        expected: { r0: 42 } },
+        { inputs: { r2: 100 },      expected: { r0: 42 } },
+      ],
+    },
     {
       id: 1,
+      category: 'arithmetic',
+      type: 'tutorial',
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 7  }, expected: { r0: 7  } },
+        { inputs: { r2: 0  }, expected: { r0: 0  } },
+        { inputs: { r2: 99 }, expected: { r0: 99 } },
+      ],
+    },
+    {
+      id: 2,
+      category: 'arithmetic',
+      type: 'tutorial',
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 0  }, expected: { r0: 3  } },
+        { inputs: { r2: 5  }, expected: { r0: 8  } },
+        { inputs: { r2: 10 }, expected: { r0: 13 } },
+        { inputs: { r2: 1  }, expected: { r0: 4  } },
+      ],
+    },
+    {
+      id: 3,
+      category: 'arithmetic',
+      type: 'tutorial',
+      available: LOOP_PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 0  }, expected: { r0: 0  } },
+        { inputs: { r2: 1  }, expected: { r0: 1  } },
+        { inputs: { r2: 5  }, expected: { r0: 5  } },
+        { inputs: { r2: 10 }, expected: { r0: 10 } },
+      ],
+    },
+    // ─── Challenges (4–6) ─────────────────────────────────────────
+    {
+      id: 4,
+      category: 'arithmetic',
+      type: 'challenge',
       available: PRIMITIVES,
       unlocks: 'ADD',
       tests: [
@@ -46,7 +113,9 @@
       ],
     },
     {
-      id: 2,
+      id: 5,
+      category: 'arithmetic',
+      type: 'challenge',
       available: PRIMITIVES.concat(['ADD']),
       unlocks: 'MUL',
       tests: [
@@ -59,7 +128,9 @@
       ],
     },
     {
-      id: 3,
+      id: 6,
+      category: 'arithmetic',
+      type: 'challenge',
       available: PRIMITIVES.concat(['ADD', 'MUL']),
       unlocks: 'POW',
       tests: [
@@ -280,6 +351,7 @@
 
   window.MiniASMExercises = {
     EXERCISES:    EXERCISES,
+    CATEGORIES:   CATEGORIES,
     PRIMITIVES:   PRIMITIVES,
     loadProgress: loadProgress,
     saveProgress: saveProgress,

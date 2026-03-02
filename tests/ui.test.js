@@ -16,10 +16,13 @@ describe('MiniASM UI', () => {
       html = fs.readFileSync(htmlPath, 'utf8');
     });
 
-    it('has mode navigation with sandbox button', () => {
+    it('has mode navigation with sandbox button and dropdown', () => {
       expect(html).toMatch(/id="mode-nav"/);
       expect(html).toMatch(/data-mode="sandbox"/);
       expect(html).toMatch(/Sandbox/);
+      expect(html).toMatch(/id="nav-dropdown"/);
+      expect(html).toMatch(/id="nav-dropdown-toggle"/);
+      expect(html).toMatch(/id="nav-dropdown-menu"/);
     });
     it('has editor panel with Code/Blocks toggle', () => {
       expect(html).toMatch(/id="btn-mode-code"/);
@@ -33,7 +36,7 @@ describe('MiniASM UI', () => {
       expect(html).toMatch(/id="btn-reset"/);
     });
     it('has test button (for exercises)', () => {
-      expect(html).toMatch(/id="btn-test"/);
+      expect(html).toMatch(/id="btn-panel-test"/);
     });
     it('has status element', () => {
       expect(html).toMatch(/id="status"/);
@@ -83,8 +86,8 @@ describe('MiniASM UI', () => {
     });
     it('T substitutes placeholders', () => {
       const T = window.MiniASMLang.T;
-      expect(T('exercisePrefix', { id: 1, title: 'Addition' })).toMatch(/1/);
-      expect(T('exercisePrefix', { id: 1, title: 'Addition' })).toMatch(/Addition/);
+      expect(T('challengePrefix', { id: 1, title: 'Addition' })).toMatch(/Addition/);
+      expect(T('tutorialPrefix', { id: 0, title: 'Hello' })).toMatch(/Hello/);
       expect(T('hintBox', { num: 1, total: 3, text: 'Hello' })).toMatch(/1/);
       expect(T('hintBox', { num: 1, total: 3, text: 'Hello' })).toMatch(/3/);
       expect(T('hintBox', { num: 1, total: 3, text: 'Hello' })).toMatch(/Hello/);

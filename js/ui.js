@@ -1,5 +1,5 @@
 /**
- * MiniASM VM — User interface with exercise system.
+ * WDR+E — User interface with challenge system.
  * Depends on: lang.js, interpreter.js, exercises.js, blocks-miniasm.js, Blockly, Monaco.
  */
 (function () {
@@ -21,6 +21,9 @@
   var currentModeId = 'sandbox';     // 'sandbox' | exercise id (number)
   var currentExercise = null;        // null in sandbox, exercise object otherwise
   var hintIndices = {};              // exerciseId -> next hint index (session-scoped)
+  var autoRunInterval = null;        // setInterval id for auto-stepping
+  var isAutoRunning = false;         // whether auto-run is active
+  var resetOnChange = true;          // reset program when user edits registers/memory
 
   // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -190,6 +193,19 @@
     if (t.nodeName !== 'TD' || !t.classList.contains('value')) return;
     if (t.hasAttribute('data-reg')) commitRegisterEdit(t);
     else if (t.hasAttribute('data-index')) commitMemoryEdit(t);
+    else return;
+
+    // If resetOnChange is enabled, reset program (PC → 0, halted → false)
+    if (resetOnChange) {
+      try {
+        window.MiniASM.loadProgram(machine, { source: getSource() });
+      } catch (err) { /* parse error — leave machine as-is */ }
+      updateStatus();
+      highlightPCLine();
+      if (currentMode === 'blocks' && blocklyWorkspace) {
+        window.MiniASMBlocks.setPCIndicator(blocklyWorkspace, machine ? machine.pc : -1);
+      }
+    }
   });
 
   // ─── Status & PC highlight ──────────────────────────────────────────
@@ -247,15 +263,92 @@
 
   // ─── Run / Step / Reset ─────────────────────────────────────────────
 
-  function run() {
-    if (!loadProgram()) return;
-    window.MiniASM.run(machine);
-    refreshTables();
-    updateStatus();
-    highlightPCLine();
-    if (currentMode === 'blocks' && blocklyWorkspace) {
-      window.MiniASMBlocks.setPCIndicator(blocklyWorkspace, machine.pc);
+  function getAutoRunInterval() {
+    var slider = document.getElementById('speed-slider');
+    return slider ? parseInt(slider.value, 10) : 500;
+  }
+
+  function stopAutoRun() {
+    if (autoRunInterval !== null) {
+      clearInterval(autoRunInterval);
+      autoRunInterval = null;
     }
+    isAutoRunning = false;
+    var btn = document.getElementById('btn-run');
+    btn.textContent = 'Run';
+    btn.classList.remove('stop');
+    btn.classList.add('primary');
+  }
+
+  function run() {
+    // If already auto-running, stop
+    if (isAutoRunning) {
+      stopAutoRun();
+      return;
+    }
+
+    // If machine is halted or finished, ask user if they want to restart
+    if (machine && (machine.halted || machine.pc >= machine.code.length)) {
+      if (!confirm('Program has finished. Restart from the beginning?')) return;
+      reset();
+    }
+
+    // Load program fresh
+    if (!loadProgram()) return;
+
+    // Instant execution when delay is 0
+    if (getAutoRunInterval() === 0) {
+      window.MiniASM.run(machine);
+      refreshTables();
+      updateStatus();
+      highlightPCLine();
+      if (currentMode === 'blocks' && blocklyWorkspace) {
+        window.MiniASMBlocks.setPCIndicator(blocklyWorkspace, machine.pc);
+      }
+      return;
+    }
+
+    // Switch button to "Stop"
+    isAutoRunning = true;
+    var btn = document.getElementById('btn-run');
+    btn.textContent = 'Stop';
+    btn.classList.remove('primary');
+    btn.classList.add('stop');
+
+    // Perform initial step immediately, then set interval
+    function autoStep() {
+      if (!machine || machine.halted || machine.pc >= machine.code.length) {
+        stopAutoRun();
+        refreshTables();
+        updateStatus();
+        highlightPCLine();
+        if (currentMode === 'blocks' && blocklyWorkspace) {
+          window.MiniASMBlocks.setPCIndicator(blocklyWorkspace, machine ? machine.pc : -1);
+        }
+        return;
+      }
+      window.MiniASM.execute(machine);
+      refreshTables();
+      updateStatus();
+      highlightPCLine();
+      if (currentMode === 'blocks' && blocklyWorkspace) {
+        window.MiniASMBlocks.setPCIndicator(blocklyWorkspace, machine.pc);
+      }
+    }
+
+    // First step right away
+    autoStep();
+    if (!isAutoRunning) return; // halted on first step
+
+    // Use setTimeout recursion so interval changes take effect immediately
+    function scheduleNext() {
+      if (!isAutoRunning) return;
+      autoRunInterval = setTimeout(function () {
+        autoStep();
+        if (isAutoRunning) scheduleNext();
+      }, getAutoRunInterval());
+    }
+    scheduleNext();
   }
 
   function step() {
@@ -277,6 +370,7 @@
   }
 
   function reset() {
+    stopAutoRun();
     try {
       machine = createMachine();
       window.MiniASM.loadProgram(machine, { source: getSource() });
@@ -332,76 +426,178 @@
     }
   }
 
-  // ─── Navigation bar setup ──────────────────────────────────────────
+  // ─── Navigation bar setup (Sandbox + Category dropdown) ─────────────
 
   function buildNavButtons() {
-    var nav = document.getElementById('mode-nav');
-    // Keep the sandbox button (first child), remove exercise buttons
-    while (nav.children.length > 1) nav.removeChild(nav.lastChild);
+    var menu = document.getElementById('nav-dropdown-menu');
+    menu.innerHTML = '';
 
-    var exercises = window.MiniASMExercises.EXERCISES;
-    for (var i = 0; i < exercises.length; i++) {
-      var ex = exercises[i];
-      var btn = document.createElement('button');
-      btn.setAttribute('data-mode', String(ex.id));
-      btn.textContent = ex.id + '. ' + ex.name;
-      nav.appendChild(btn);
+    var categories = window.MiniASMExercises.CATEGORIES;
+    var exercises  = window.MiniASMExercises.EXERCISES;
+
+    for (var c = 0; c < categories.length; c++) {
+      var cat = categories[c];
+
+      // Category header
+      var header = document.createElement('div');
+      header.className = 'nav-cat-header';
+      header.textContent = cat.name;
+      menu.appendChild(header);
+
+      // Collect tutorials and challenges for this category
+      var tutorials  = [];
+      var challenges = [];
+      for (var i = 0; i < exercises.length; i++) {
+        if (exercises[i].category === cat.id) {
+          if (exercises[i].type === 'tutorial') tutorials.push(exercises[i]);
+          else challenges.push(exercises[i]);
+        }
+      }
+
+      // Tutorial sub-label + items
+      if (tutorials.length > 0) {
+        var tutLabel = document.createElement('div');
+        tutLabel.className = 'nav-cat-sublabel';
+        tutLabel.textContent = 'Tutorials';
+        menu.appendChild(tutLabel);
+
+        for (var t = 0; t < tutorials.length; t++) {
+          menu.appendChild(createNavItem(tutorials[t]));
+        }
+      }
+
+      // Separator + challenge sub-label + items
+      if (challenges.length > 0) {
+        if (tutorials.length > 0) {
+          var sep = document.createElement('div');
+          sep.className = 'nav-cat-separator';
+          menu.appendChild(sep);
+        }
+        var chLabel = document.createElement('div');
+        chLabel.className = 'nav-cat-sublabel';
+        chLabel.textContent = 'Challenges';
+        menu.appendChild(chLabel);
+
+        for (var ch = 0; ch < challenges.length; ch++) {
+          menu.appendChild(createNavItem(challenges[ch]));
+        }
+      }
+
+      // Separator between categories
+      if (c < categories.length - 1) {
+        var catSep = document.createElement('div');
+        catSep.className = 'nav-cat-separator';
+        catSep.style.margin = '8px 12px';
+        menu.appendChild(catSep);
+      }
     }
+
     updateNavButtons();
   }
 
+  function createNavItem(ex) {
+    var btn = document.createElement('button');
+    btn.className = 'nav-item';
+    btn.setAttribute('data-mode', String(ex.id));
+
+    var icon = document.createElement('span');
+    icon.className = 'nav-item-icon';
+    btn.appendChild(icon);
+
+    var text = document.createElement('span');
+    text.textContent = ex.type === 'tutorial' ? ex.title : ex.name;
+    btn.appendChild(text);
+
+    return btn;
+  }
+
   function updateNavButtons() {
-    var nav = document.getElementById('mode-nav');
-    var buttons = nav.querySelectorAll('button');
-    var exercises = window.MiniASMExercises.EXERCISES;
+    // Sandbox button
+    var sandboxBtn = document.querySelector('#mode-nav > button[data-mode="sandbox"]');
+    sandboxBtn.classList.toggle('active', currentModeId === 'sandbox');
 
-    for (var i = 0; i < buttons.length; i++) {
-      var btn = buttons[i];
-      var modeId = btn.getAttribute('data-mode');
+    // Dropdown toggle
+    var toggle = document.getElementById('nav-dropdown-toggle');
+    var label  = document.getElementById('nav-dropdown-label');
+    if (currentModeId !== 'sandbox' && currentExercise) {
+      var displayName = currentExercise.type === 'tutorial'
+        ? currentExercise.title
+        : currentExercise.name;
+      label.textContent = displayName + ' ▾';
+      toggle.classList.add('has-selection');
+    } else {
+      label.textContent = 'Challenges ▾';
+      toggle.classList.remove('has-selection');
+    }
 
-      // Remove all state classes
-      btn.classList.remove('active', 'locked', 'completed');
-
-      if (modeId === 'sandbox') {
-        if (currentModeId === 'sandbox') btn.classList.add('active');
-        continue;
-      }
-
-      var exId = parseInt(modeId, 10);
-      var ex = findExercise(exId);
+    // Menu items
+    var items = document.querySelectorAll('#nav-dropdown-menu .nav-item');
+    for (var i = 0; i < items.length; i++) {
+      var btn    = items[i];
+      var exId   = parseInt(btn.getAttribute('data-mode'), 10);
+      var ex     = findExercise(exId);
       if (!ex) continue;
 
       var completed = window.MiniASMExercises.isCompleted(exId);
       var available = window.MiniASMExercises.isAvailable(ex);
 
+      btn.classList.remove('active', 'locked', 'completed');
       if (completed) btn.classList.add('completed');
       if (!available && !completed) btn.classList.add('locked');
       if (currentModeId === exId) btn.classList.add('active');
 
-      // Update label
-      var prefix = completed ? '✅ ' : (!available ? '🔒 ' : '');
-      btn.textContent = prefix + ex.id + '. ' + ex.name;
+      // Update icon
+      var icon = btn.querySelector('.nav-item-icon');
+      if (icon) {
+        icon.textContent = completed ? '✅' : (!available ? '🔒' : '○');
+      }
     }
   }
 
-  function handleNavClick(e) {
-    var btn = e.target.closest('button');
-    if (!btn) return;
-    if (btn.classList.contains('locked')) return;
+  /** Open / close dropdown, handle item clicks */
+  function setupDropdown() {
+    var dropdown = document.getElementById('nav-dropdown');
+    var toggle   = document.getElementById('nav-dropdown-toggle');
+    var menu     = document.getElementById('nav-dropdown-menu');
 
-    var modeId = btn.getAttribute('data-mode');
-    if (modeId === 'sandbox') {
-      switchMode('sandbox');
-    } else {
-      var exId = parseInt(modeId, 10);
+    toggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      dropdown.classList.toggle('open');
+    });
+
+    menu.addEventListener('click', function (e) {
+      var btn = e.target.closest('.nav-item');
+      if (!btn) return;
+      if (btn.classList.contains('locked')) return;
+
+      var exId = parseInt(btn.getAttribute('data-mode'), 10);
+      dropdown.classList.remove('open');
       switchMode(exId);
-    }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function (e) {
+      if (!dropdown.contains(e.target)) {
+        dropdown.classList.remove('open');
+      }
+    });
+  }
+
+  function handleNavClick(e) {
+    var btn = e.target.closest('button[data-mode="sandbox"]');
+    if (!btn) return;
+    var dropdown = document.getElementById('nav-dropdown');
+    dropdown.classList.remove('open');
+    switchMode('sandbox');
   }
 
   // ─── Mode switching ─────────────────────────────────────────────────
 
   function switchMode(modeId) {
     if (modeId === currentModeId) return;
+
+    // Stop any running auto-step
+    stopAutoRun();
 
     // Save current code
     saveCurrentCode();
@@ -431,14 +627,11 @@
     }
 
     // Show/hide exercise UI
-    var testBtn = document.getElementById('btn-test');
     var panel = document.getElementById('exercise-panel');
     if (currentExercise) {
-      testBtn.style.display = '';
       panel.classList.add('visible');
       updateExercisePanel();
     } else {
-      testBtn.style.display = 'none';
       panel.classList.remove('visible');
     }
 
@@ -459,8 +652,9 @@
     if (!currentExercise) return;
     var ex = currentExercise;
 
+    var titleKey = ex.type === 'tutorial' ? 'tutorialPrefix' : 'challengePrefix';
     document.getElementById('ex-title').textContent =
-      T('exercisePrefix', { id: ex.id, title: ex.title });
+      T(titleKey, { id: ex.id, title: ex.title });
     document.getElementById('ex-goal').textContent = ex.goal;
     document.getElementById('ex-body').textContent = ex.description;
 
@@ -608,12 +802,34 @@
   document.getElementById('btn-run').addEventListener('click', run);
   document.getElementById('btn-step').addEventListener('click', step);
   document.getElementById('btn-reset').addEventListener('click', reset);
-  document.getElementById('btn-test').addEventListener('click', runTests);
+
+  // Speed slider: update displayed value
+  document.getElementById('speed-slider').addEventListener('input', function () {
+    var v = parseInt(this.value, 10);
+    document.getElementById('speed-value').textContent = v === 0 ? 'Instant' : v + 'ms';
+  });
+
   document.getElementById('btn-panel-test').addEventListener('click', runTests);
   document.getElementById('btn-hint').addEventListener('click', showNextHint);
   document.getElementById('btn-mode-code').addEventListener('click', function () { setEditorMode('code'); });
   document.getElementById('btn-mode-blocks').addEventListener('click', function () { setEditorMode('blocks'); });
   document.getElementById('mode-nav').addEventListener('click', handleNavClick);
+
+  // Reset-on-change toggle: restore from localStorage and wire up
+  (function () {
+    var chk = document.getElementById('chk-reset-on-change');
+    try {
+      var saved = localStorage.getItem('miniasm-resetOnChange');
+      if (saved !== null) {
+        resetOnChange = saved === 'true';
+        chk.checked = resetOnChange;
+      }
+    } catch (e) { /* ignore */ }
+    chk.addEventListener('change', function () {
+      resetOnChange = this.checked;
+      try { localStorage.setItem('miniasm-resetOnChange', String(resetOnChange)); } catch (e) { /* ignore */ }
+    });
+  })();
 
   // ─── Monaco editor initialization ───────────────────────────────────
 
@@ -657,6 +873,7 @@
     document.head.appendChild(style);
 
     // Build nav & initialize
+    setupDropdown();
     buildNavButtons();
     machine = createMachine();
     loadProgram();

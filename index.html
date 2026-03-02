@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MiniASM VM</title>
+  <title>WDR+E — the not only paper computer</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css" />
   <style>
     * { box-sizing: border-box; }
@@ -20,12 +20,14 @@
     /* ─── Mode navigation ────────────────────────────── */
     #mode-nav {
       display: flex;
+      align-items: stretch;
       background: #11111b;
       border-bottom: 2px solid #313244;
       padding: 0 8px;
       flex: 0 0 auto;
+      position: relative;
     }
-    #mode-nav button {
+    #mode-nav > button {
       font-family: inherit;
       font-size: 13px;
       padding: 10px 18px;
@@ -37,20 +39,127 @@
       margin-bottom: -2px;
       transition: color .15s, border-color .15s;
     }
-    #mode-nav button:hover:not(.locked) { color: #cdd6f4; }
-    #mode-nav button.active {
+    #mode-nav > button:hover { color: #cdd6f4; }
+    #mode-nav > button.active {
       color: #89b4fa;
       border-bottom-color: #89b4fa;
     }
-    #mode-nav button.locked {
+
+    /* ─── Category dropdown ───────────────────────────── */
+    .nav-dropdown {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+    }
+    .nav-dropdown-toggle {
+      font-family: inherit;
+      font-size: 13px;
+      padding: 10px 18px;
+      border: none;
+      background: transparent;
+      color: #6c7086;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color .15s, border-color .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-dropdown-toggle:hover { color: #cdd6f4; }
+    .nav-dropdown-toggle.has-selection {
+      color: #89b4fa;
+      border-bottom-color: #89b4fa;
+    }
+    .nav-dropdown-arrow {
+      font-size: 10px;
+      transition: transform .2s;
+    }
+    .nav-dropdown.open .nav-dropdown-arrow {
+      transform: rotate(180deg);
+    }
+    .nav-dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 260px;
+      max-height: 70vh;
+      overflow-y: auto;
+      background: #1e1e2e;
+      border: 1px solid #313244;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+      z-index: 1000;
+      padding: 6px 0;
+    }
+    .nav-dropdown.open .nav-dropdown-menu {
+      display: block;
+    }
+    .nav-cat-header {
+      padding: 8px 14px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #585b70;
+      user-select: none;
+    }
+    .nav-cat-separator {
+      height: 1px;
+      background: #313244;
+      margin: 4px 12px;
+    }
+    .nav-cat-sublabel {
+      padding: 6px 14px 2px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #45475a;
+      user-select: none;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 7px 14px 7px 20px;
+      border: none;
+      background: transparent;
+      color: #bac2de;
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      gap: 8px;
+      transition: background .1s, color .1s;
+    }
+    .nav-item:hover:not(.locked) {
+      background: #313244;
+      color: #cdd6f4;
+    }
+    .nav-item.active {
+      background: #89b4fa22;
+      color: #89b4fa;
+      font-weight: 600;
+    }
+    .nav-item.completed {
+      color: #a6e3a1;
+    }
+    .nav-item.completed.active {
+      background: #a6e3a122;
+      color: #a6e3a1;
+    }
+    .nav-item.locked {
       color: #45475a;
       cursor: not-allowed;
     }
-    #mode-nav button.completed {
-      color: #a6e3a1;
-    }
-    #mode-nav button.completed.active {
-      border-bottom-color: #a6e3a1;
+    .nav-item-icon {
+      width: 18px;
+      text-align: center;
+      flex: 0 0 auto;
+      font-size: 12px;
     }
 
     /* ─── Main layout ────────────────────────────────── */
@@ -95,14 +204,6 @@
     }
     .panel-editor .toolbar button.primary:hover {
       background: #b4befe;
-    }
-    .panel-editor .toolbar button.test-btn {
-      background: #a6e3a1;
-      color: #1e1e2e;
-      font-weight: 600;
-    }
-    .panel-editor .toolbar button.test-btn:hover {
-      background: #94e2d5;
     }
     .editor-area {
       flex: 1;
@@ -307,6 +408,61 @@
       font-size: 12px;
     }
 
+    /* ─── State options bar ──────────────────────────── */
+    .state-options {
+      display: flex;
+      align-items: center;
+      padding: 6px 14px;
+      background: #181825;
+      border-bottom: 1px solid #313244;
+    }
+    .toggle-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle-text {
+      font-size: 12px;
+      color: #6c7086;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 32px;
+      height: 18px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #45475a;
+      border-radius: 9px;
+      transition: background .2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      left: 3px;
+      bottom: 3px;
+      background: #cdd6f4;
+      border-radius: 50%;
+      transition: transform .2s;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background: #89b4fa;
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(14px);
+    }
+
     /* ─── Tables (registers / memory) ────────────────── */
     .table-block {
       min-height: 0;
@@ -352,6 +508,61 @@
     td.value[contenteditable="true"]:focus { outline: 1px solid #89b4fa; outline-offset: -1px; }
     .pc-row { background: #45475a55 !important; }
     .pc-row td { border-left: 3px solid #f9e2af; }
+    /* ─── Speed slider ─────────────────────────────── */
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 8px;
+    }
+    .speed-label {
+      font-size: 11px;
+      color: #6c7086;
+      white-space: nowrap;
+    }
+    .speed-value {
+      font-size: 11px;
+      color: #89b4fa;
+      min-width: 42px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    #speed-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 90px;
+      height: 4px;
+      background: #45475a;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    #speed-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #89b4fa;
+      cursor: pointer;
+      border: none;
+    }
+    #speed-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #89b4fa;
+      cursor: pointer;
+      border: none;
+    }
+    .panel-editor .toolbar button.stop {
+      background: #f38ba8;
+      color: #1e1e2e;
+    }
+    .panel-editor .toolbar button.stop:hover {
+      background: #eba0ac;
+    }
+
     .status {
       font-size: 12px;
       color: #6c7086;
@@ -365,7 +576,14 @@
   <!-- ─── Mode navigation ─────────────────────────────────────── -->
   <nav id="mode-nav">
     <button data-mode="sandbox" class="active">🏖️ Sandbox</button>
-    <!-- Exercise buttons are generated dynamically by ui.js -->
+    <div class="nav-dropdown" id="nav-dropdown">
+      <button type="button" class="nav-dropdown-toggle" id="nav-dropdown-toggle">
+        <span id="nav-dropdown-label">Challenges ▾</span>
+      </button>
+      <div class="nav-dropdown-menu" id="nav-dropdown-menu">
+        <!-- Category items generated dynamically by ui.js -->
+      </div>
+    </div>
   </nav>
 
   <div id="root">
@@ -379,7 +597,12 @@
         <button type="button" class="primary" id="btn-run">Run</button>
         <button type="button" id="btn-step">Step</button>
         <button type="button" id="btn-reset">Reset</button>
-        <button type="button" class="test-btn" id="btn-test" style="display:none">▶ Test</button>
+
+        <label class="speed-control" id="speed-control">
+          <span class="speed-label">Speed</span>
+          <input type="range" id="speed-slider" min="0" max="2000" value="500" step="50" />
+          <span class="speed-value" id="speed-value">500ms</span>
+        </label>
         <span class="status" id="status">Stopped</span>
       </div>
       <div class="editor-area">
@@ -410,6 +633,16 @@
         </div>
         <div id="ex-hints"></div>
         <div id="test-results"></div>
+      </div>
+
+      <div class="state-options">
+        <label class="toggle-option" for="chk-reset-on-change">
+          <span class="toggle-switch">
+            <input type="checkbox" id="chk-reset-on-change" checked />
+            <span class="toggle-slider"></span>
+          </span>
+          <span class="toggle-text">Reset program on edit</span>
+        </label>
       </div>
 
       <div class="table-block registers">
