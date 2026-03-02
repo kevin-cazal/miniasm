@@ -243,6 +243,22 @@
     }
   };
 
+  Blockly.Blocks['miniasm_sub'] = {
+    init: function() {
+      this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
+          .appendField('SUB  r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'X')
+          .appendField(' r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'Y');
+      appendHelpLines(this, 'tooltipSub');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip(T('tooltipSub'));
+    }
+  };
+
   Blockly.Blocks['miniasm_mul'] = {
     init: function() {
       this.appendDummyInput()
@@ -306,6 +322,9 @@
   };
   generator['miniasm_add'] = function(block) {
     return 'ADD r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
+  };
+  generator['miniasm_sub'] = function(block) {
+    return 'SUB r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
   };
   generator['miniasm_mul'] = function(block) {
     return 'MUL r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
@@ -420,6 +439,7 @@
     if (op === 'STP') return { type: 'miniasm_stp' };
     // Unlockable instructions
     if (op === 'ADD' && tokens.length >= 3) return { type: 'miniasm_add', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
+    if (op === 'SUB' && tokens.length >= 3) return { type: 'miniasm_sub', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
     if (op === 'MUL' && tokens.length >= 3) return { type: 'miniasm_mul', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
     if (op === 'POW' && tokens.length >= 3) return { type: 'miniasm_pow', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
     return null;
@@ -451,6 +471,7 @@
     JMP: 'miniasm_jmp',
     STP: 'miniasm_stp',
     ADD: 'miniasm_add',
+    SUB: 'miniasm_sub',
     MUL: 'miniasm_mul',
     POW: 'miniasm_pow',
   };
@@ -458,7 +479,7 @@
   // Category structure (opcodes grouped by category, with lang keys)
   var CATEGORIES = [
     { nameKey: 'catData',       opcodes: ['SET'] },
-    { nameKey: 'catArithmetic', opcodes: ['INC', 'DEC', 'ADD', 'MUL', 'POW'] },
+    { nameKey: 'catArithmetic', opcodes: ['INC', 'DEC', 'ADD', 'SUB', 'MUL', 'POW'] },
     { nameKey: 'catControl',    opcodes: ['ISZ', 'ISN', 'JMP', 'STP'] },
   ];
 

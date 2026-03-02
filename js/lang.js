@@ -70,6 +70,7 @@
       tooltipJmp: 'JMP iN — Jump to instruction N (unconditional goto).',
       tooltipStp: 'STP — Stop execution and halt the program.',
       tooltipAdd: 'ADD rX rY — rX = rX + rY  (rY is preserved)',
+      tooltipSub: 'SUB rX rY — rX = rX − rY  (rY is preserved)',
       tooltipMul: 'MUL rX rY — rX = rX × rY  (rY is preserved)',
       tooltipPow: 'POW rX rY — rX = rX ^ rY  (rY is preserved)',
 
@@ -341,6 +342,240 @@
             '; Available: SET, INC, DEC, ISZ, ISN, STP, JMP, ADD, MUL\n' +
             '; Inputs in r2 and r3. Store result in r0.\n' +
             '; r0, r1 are free to use as scratch.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+
+        // ─── Comparisons & Logic — Tutorials (7–8) ─────────────
+        7: {
+          name: 'Tutorial',
+          title: 'Going Down',
+          goal: 'Put r2 − 5 into r0',
+          description:
+            'You know INC adds 1. Time to learn its twin: DEC subtracts 1!\n' +
+            '\n' +
+            '🧰 KEY INSTRUCTION\n' +
+            '  DEC r0   → Subtract 1 from r0\n' +
+            '\n' +
+            '⚠️ VALUES CAN GO NEGATIVE\n' +
+            'If r0 is 3 and you DEC three times, r0 becomes 0.\n' +
+            'DEC one more time? r0 becomes −1!\n' +
+            'Registers can hold negative numbers.\n' +
+            '\n' +
+            '🎯 YOUR TASK\n' +
+            'Register r2 has a number. Put r2 − 5 into r0, then stop.\n' +
+            '\n' +
+            '💡 STRATEGY\n' +
+            '1. Copy r2 into r0\n' +
+            '2. DEC r0 five times\n' +
+            '3. Stop!',
+          hints: [
+            'Copy r2 into r0 with SET, then use DEC r0 five times.',
+            'Full solution:\n  SET r0 r2\n  DEC r0\n  DEC r0\n  DEC r0\n  DEC r0\n  DEC r0\n  STP',
+          ],
+          starterCode:
+            '; ─── Tutorial: Going Down ───\n' +
+            '; Goal: Put r2 − 5 into r0\n' +
+            ';\n' +
+            '; Useful instructions:\n' +
+            ';   SET r0 r2  — copy r2 into r0\n' +
+            ';   DEC r0     — subtract 1 from r0\n' +
+            ';   STP        — stop the program\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        8: {
+          name: 'Tutorial',
+          title: 'Which Way?',
+          goal: 'Set r0 to 1 if r2 is negative, 0 otherwise',
+          description:
+            'Now that you know values can be negative, let\'s learn to detect it!\n' +
+            '\n' +
+            '🧰 KEY INSTRUCTION\n' +
+            '  ISN r2   → If r2 is negative, SKIP the next line\n' +
+            '\n' +
+            'This is like ISZ (skip if zero), but for negative numbers.\n' +
+            'The pattern is the same:\n' +
+            '\n' +
+            '  ISN r2       ← Is r2 negative?\n' +
+            '  JMP i4       ← NO → jump somewhere\n' +
+            '  ...          ← YES → this runs (the skip jumped over JMP)\n' +
+            '  STP\n' +
+            '\n' +
+            '🎯 YOUR TASK\n' +
+            'If r2 is negative, set r0 to 1. Otherwise, set r0 to 0.\n' +
+            'Think of it as answering: "Is r2 negative? Yes (1) or No (0)".',
+          hints: [
+            'Use ISN r2 to check if r2 is negative.\nIf it IS negative, ISN skips the next line.\nUse JMP to skip over the "yes" code when it\'s not negative.',
+            'Full solution:\n  SET r0 #0\n  ISN r2\n  JMP i5\n  SET r0 #1\n  STP',
+          ],
+          starterCode:
+            '; ─── Tutorial: Which Way? ───\n' +
+            '; Goal: r0 = 1 if r2 < 0, else r0 = 0\n' +
+            ';\n' +
+            '; Key instruction:\n' +
+            ';   ISN r2  — if r2 < 0, skip the next line\n' +
+            ';\n' +
+            '; The pattern:\n' +
+            ';   ISN r2      ; check if negative\n' +
+            ';   JMP i?      ; not negative → jump past\n' +
+            ';   ...         ; negative → do something here\n' +
+            ';   STP\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        // ─── Comparisons & Logic — Challenges (9–13) ───────────
+        9: {
+          name: 'SUB',
+          title: 'Subtraction',
+          goal: 'Put r2 − r3 into r0',
+          description:
+            'You built ADD with a loop (INC in a loop).\n' +
+            'Now do the opposite: build subtraction!\n' +
+            '\n' +
+            'Registers r2 and r3 are pre-loaded with values.\n' +
+            'Write a program that:\n' +
+            '  • Computes r2 − r3\n' +
+            '  • Stores the result in r0\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 Hint: it\'s like ADD, but use DEC instead of INC.\n' +
+            '   Copy r2 into r0, then DEC r0 once for each unit in r3.',
+          hints: [
+            'Copy r2 into r0 with SET.\nThen loop: DEC r0 and DEC r3, until r3 reaches 0.\nUse ISZ r3 to check.',
+            'Full approach:\n  SET r0 r2\n  ISZ r3\n  JMP i5\n  STP\n  DEC r0\n  DEC r3\n  JMP i2',
+          ],
+          starterCode:
+            '; ─── Challenge: Subtraction ───\n' +
+            '; Goal: Put r2 − r3 into r0\n' +
+            ';\n' +
+            '; Available: SET, INC, DEC, ISZ, ISN, STP, JMP\n' +
+            '; Inputs in r2 and r3. Store result in r0.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        10: {
+          name: 'ABS',
+          title: 'Absolute Value',
+          goal: 'Put |r2| into r0 (always non-negative)',
+          description:
+            'The absolute value of a number is its "distance from zero":\n' +
+            '  |5| = 5,  |−5| = 5,  |0| = 0\n' +
+            '\n' +
+            'Write a program that:\n' +
+            '  • Computes |r2| (absolute value of r2)\n' +
+            '  • Stores the result in r0\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 You now have SUB! Think about how to negate a negative number.\n' +
+            '   If r2 is negative: 0 − r2 gives you the positive version.',
+          hints: [
+            'Copy r2 into r0.\nCheck if r0 is negative (ISN).\nIf not negative, you\'re done.\nIf negative, compute 0 − r0 to flip the sign.',
+            'One approach:\n  SET r0 r2\n  ISN r0\n  JMP i7\n  SET r1 #0\n  SUB r1 r0\n  SET r0 r1\n  STP',
+          ],
+          starterCode:
+            '; ─── Challenge: Absolute Value ───\n' +
+            '; Goal: Put |r2| into r0\n' +
+            ';\n' +
+            '; You have SUB now!\n' +
+            '; Input in r2. Store result in r0.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        11: {
+          name: 'SGN',
+          title: 'Sign Function',
+          goal: 'Set r0 to the sign of r2: 1, 0, or −1',
+          description:
+            'The sign function tells you the "direction" of a number:\n' +
+            '  sgn(5)  = 1   (positive)\n' +
+            '  sgn(0)  = 0   (zero)\n' +
+            '  sgn(−3) = −1  (negative)\n' +
+            '\n' +
+            'Write a program that:\n' +
+            '  • Sets r0 to 1 if r2 > 0\n' +
+            '  • Sets r0 to 0 if r2 = 0\n' +
+            '  • Sets r0 to −1 if r2 < 0\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 You need three branches:\n' +
+            '   Check zero (ISZ), check negative (ISN), otherwise positive.',
+          hints: [
+            'Use ISZ to check if r2 is zero, and ISN to check if r2 is negative.\nIf neither: r2 is positive, so r0 = 1.',
+            'One approach:\n  ISZ r2\n  JMP i5\n  SET r0 #0\n  STP\n  ISN r2\n  JMP i10\n  SET r0 #0\n  DEC r0\n  STP\n  SET r0 #1\n  STP',
+          ],
+          starterCode:
+            '; ─── Challenge: Sign Function ───\n' +
+            '; Goal: r0 = 1 if r2>0, 0 if r2=0, −1 if r2<0\n' +
+            ';\n' +
+            '; Input in r2. Store result in r0.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        12: {
+          name: 'MIN',
+          title: 'Minimum',
+          goal: 'Put min(r2, r3) into r0',
+          description:
+            'Write a program that finds the smaller of two values.\n' +
+            '\n' +
+            'Registers r2 and r3 hold two numbers.\n' +
+            'Write a program that:\n' +
+            '  • Computes the minimum of r2 and r3\n' +
+            '  • Stores it in r0\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 Compare r2 and r3 using SUB.\n' +
+            '   If r2 − r3 is negative, r2 is smaller.',
+          hints: [
+            'Compute r2 − r3 and check its sign with ISN.\nIf negative → r2 < r3, so r0 = r2.\nOtherwise → r0 = r3.',
+            'One approach:\n  SET r0 r2\n  SUB r0 r3\n  ISN r0\n  JMP i7\n  SET r0 r2\n  STP\n  SET r0 r3\n  STP',
+          ],
+          starterCode:
+            '; ─── Challenge: Minimum ───\n' +
+            '; Goal: r0 = min(r2, r3)\n' +
+            ';\n' +
+            '; Inputs in r2 and r3. Store result in r0.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        13: {
+          name: 'MAX',
+          title: 'Maximum',
+          goal: 'Put max(r2, r3) into r0',
+          description:
+            'Write a program that finds the larger of two values.\n' +
+            '\n' +
+            'Registers r2 and r3 hold two numbers.\n' +
+            'Write a program that:\n' +
+            '  • Computes the maximum of r2 and r3\n' +
+            '  • Stores it in r0\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 Same approach as MIN, but swap which value you pick!',
+          hints: [
+            'Compute r2 − r3 and check its sign with ISN.\nIf negative → r2 < r3, so r0 = r3 (the bigger one).\nOtherwise → r0 = r2.',
+            'One approach:\n  SET r0 r2\n  SUB r0 r3\n  ISN r0\n  JMP i7\n  SET r0 r3\n  STP\n  SET r0 r2\n  STP',
+          ],
+          starterCode:
+            '; ─── Challenge: Maximum ───\n' +
+            '; Goal: r0 = max(r2, r3)\n' +
+            ';\n' +
+            '; Inputs in r2 and r3. Store result in r0.\n' +
             ';\n' +
             '; Write your code below:\n' +
             '\n' +
