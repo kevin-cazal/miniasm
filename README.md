@@ -1,6 +1,6 @@
 # WDR+E (the not only paper computer)
 
-A browser-based virtual machine and IDE inspired by the [WDR paper computer](https://en.wikipedia.org/wiki/WDR_paper_computer) (Know-how Computer) — the 1983 educational model that used pen, paper, and matches to teach programming. WDR+E keeps the same spirit and a compatible core instruction set, but runs as a web app with registers, memory, and optional block-based editing.
+A browser-based virtual machine and IDE inspired by the [WDR paper computer](https://en.wikipedia.org/wiki/WDR_paper_computer) (Know-how Computer) — the 1983 educational model that used pen, paper, and matches to teach programming. WDR+E (+ extension) keeps the same spirit and a compatible core instruction set, but runs as a web app with registers, memory, and optional block-based editing.
 
 ---
 
