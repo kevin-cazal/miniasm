@@ -13,7 +13,7 @@ var MEMORY_SIZE      = (_cfg.memory && _cfg.memory.size) || 64;
 var RANDOM_MAX       = _cfg.randomMax || 256;
 var MAX_STEPS_DEFAULT = _cfg.maxSteps || 100000;
 var OPERAND_TYPES    = _cfg.operandTypes || {
-  'r': 'Register', '#': 'Immediate', '@': 'MemoryAddress', 'l': 'InstructionNumber'
+  'r': 'Register', '#': 'Immediate', '@': 'MemoryAddress', 'i': 'InstructionNumber'
 };
 
 // ─── Derived values ──────────────────────────────────────────────
@@ -222,7 +222,7 @@ function printCode(machine) {
       if (op.type === 'Register') return REG_NAMES[op.value];
       if (op.type === 'Immediate') return '#' + op.value;
       if (op.type === 'MemoryAddress') return '@' + op.value;
-      return 'l' + op.value;
+      return 'i' + op.value;
     }).join(' ');
     console.log(idx + ': ' + instr.opcode + ' ' + argsStr + marker);
   }

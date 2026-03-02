@@ -16,6 +16,7 @@
   Blockly.Blocks['miniasm_start'] = {
     init: function() {
       this.appendDummyInput().appendField(T('blockStart'));
+      appendHelpLines(this, 'tooltipStart');
       this.setNextStatement(true, null);
       this.setPreviousStatement(false);
       this.setDeletable(false);
@@ -25,20 +26,116 @@
   };
 
   var lineNumField = function() {
-    return new (Blockly.FieldLabelSerializable || Blockly.FieldLabel)('0', 'line_num');
+    return new (Blockly.FieldLabelSerializable || Blockly.FieldLabel)('[1]', 'line_num');
   };
+
+  var MAX_HELP_LINE = 48;
+
+  /** Append help rows from T(tooltipKey), one dummy input per line (split on \\n). Long lines are word-wrapped. */
+  function appendHelpLines(block, tooltipKey) {
+    var text = T(tooltipKey);
+    var lines = text.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+    var out = [];
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      while (line.length > MAX_HELP_LINE) {
+        var idx = line.lastIndexOf(' ', MAX_HELP_LINE);
+        if (idx <= 0) idx = MAX_HELP_LINE;
+        out.push(line.slice(0, idx).trim());
+        line = line.slice(idx).trim();
+      }
+      if (line) out.push(line);
+    }
+    for (var j = 0; j < out.length; j++) {
+      block.appendDummyInput()
+          .appendField((j === 0 ? 'ℹ️ ' : '   ') + out[j]);
+    }
+  }
+
+  function setBlockUpdateValueFields(block) {
+    if (block.type !== 'miniasm_set') return;
+    var n = CFG.registers.count;
+    var regOpts = CFG.regOptions;
+
+    function validRegIndex(val) {
+      var i = parseInt(val, 10);
+      return !isNaN(i) && i >= 0 && i < n ? String(i) : '0';
+    }
+
+    function ensureDestVal() {
+      var input = block.getInput('DEST_ROW') || block.getInput(0);
+      var destType = block.getFieldValue('DEST_TYPE');
+      var currentField = block.getField('DEST_VAL');
+      var wantDropdown = (destType === 'reg');
+      var isDropdown = currentField && currentField.constructor === Blockly.FieldDropdown;
+      if (!currentField || isDropdown !== wantDropdown) {
+        var saved = currentField ? block.getFieldValue('DEST_VAL') : '0';
+        input.removeField('DEST_VAL');
+        if (wantDropdown) {
+          input.appendField(new Blockly.FieldDropdown(regOpts), 'DEST_VAL');
+          block.setFieldValue(validRegIndex(saved), 'DEST_VAL');
+        } else {
+          input.appendField(new Blockly.FieldTextInput(saved || '0'), 'DEST_VAL');
+        }
+      }
+    }
+
+    function ensureSrcVal() {
+      var input = block.getInput('SRC_ROW') || block.getInput(1);
+      var srcType = block.getFieldValue('SRC_TYPE');
+      var currentField = block.getField('SRC_VAL');
+      var wantDropdown = (srcType === 'reg');
+      var isDropdown = currentField && currentField.constructor === Blockly.FieldDropdown;
+      if (!currentField || isDropdown !== wantDropdown) {
+        var saved = currentField ? block.getFieldValue('SRC_VAL') : '0';
+        input.removeField('SRC_VAL');
+        if (wantDropdown) {
+          input.appendField(new Blockly.FieldDropdown(regOpts), 'SRC_VAL');
+          block.setFieldValue(validRegIndex(saved), 'SRC_VAL');
+        } else {
+          input.appendField(new Blockly.FieldTextInput(saved || '0'), 'SRC_VAL');
+        }
+      }
+    }
+
+    ensureDestVal();
+    ensureSrcVal();
+  }
+
+  function createSetTypeDropdown(options, onTypeChange) {
+    var field = new Blockly.FieldDropdown(options);
+    if (field.setValidator) {
+      field.setValidator(function(newVal) {
+        var f = this;
+        setTimeout(function() {
+          var block = f.getSourceBlock && f.getSourceBlock();
+          if (block && block.workspace && !block.isDisposed() && onTypeChange) {
+            onTypeChange(block);
+          }
+        }, 0);
+        return newVal;
+      });
+    }
+    return field;
+  }
 
   Blockly.Blocks['miniasm_set'] = {
     init: function() {
-      this.appendDummyInput()
+      var self = this;
+      this.appendDummyInput('DEST_ROW')
           .appendField(lineNumField(), 'LINE_NUM')
           .appendField('SET')
-          .appendField(new Blockly.FieldDropdown([['reg', 'reg'], ['mem', 'mem']]), 'DEST_TYPE')
-          .appendField(new Blockly.FieldTextInput('0'), 'DEST_VAL');
-      this.appendDummyInput()
+          .appendField(
+              createSetTypeDropdown([['reg', 'reg'], ['mem', 'mem']], setBlockUpdateValueFields),
+              'DEST_TYPE')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'DEST_VAL');
+      this.appendDummyInput('SRC_ROW')
           .appendField(T('blockTo'))
-          .appendField(new Blockly.FieldDropdown([['reg', 'reg'], ['mem', 'mem'], ['#', '#']]), 'SRC_TYPE')
-          .appendField(new Blockly.FieldTextInput('0'), 'SRC_VAL');
+          .appendField(
+              createSetTypeDropdown([['reg', 'reg'], ['mem', 'mem'], ['#', '#']], setBlockUpdateValueFields),
+              'SRC_TYPE')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'SRC_VAL');
+      appendHelpLines(this, 'tooltipSet');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
@@ -50,8 +147,9 @@
     init: function() {
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
-          .appendField('INC')
+          .appendField('INC reg ')
           .appendField(new Blockly.FieldDropdown(regOptions), 'REG');
+      appendHelpLines(this, 'tooltipInc');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(160);
@@ -63,8 +161,9 @@
     init: function() {
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
-          .appendField('DEC')
+          .appendField('DEC reg ')
           .appendField(new Blockly.FieldDropdown(regOptions), 'REG');
+      appendHelpLines(this, 'tooltipDec');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(160);
@@ -76,8 +175,9 @@
     init: function() {
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
-          .appendField('ISZ')
+          .appendField('ISZ reg ')
           .appendField(new Blockly.FieldDropdown(regOptions), 'REG');
+      appendHelpLines(this, 'tooltipIsz');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(290);
@@ -89,8 +189,9 @@
     init: function() {
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
-          .appendField('ISN')
+          .appendField('ISN reg ')
           .appendField(new Blockly.FieldDropdown(regOptions), 'REG');
+      appendHelpLines(this, 'tooltipIsn');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(290);
@@ -102,8 +203,9 @@
     init: function() {
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
-          .appendField('JMP')
-          .appendField(new Blockly.FieldNumber(0, 0, 999), 'LINE');
+          .appendField('JMP to instruction ')
+          .appendField(new Blockly.FieldNumber(1, 1, 999), 'LINE');
+      appendHelpLines(this, 'tooltipJmp');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(290);
@@ -116,6 +218,7 @@
       this.appendDummyInput()
           .appendField(lineNumField(), 'LINE_NUM')
           .appendField('STP');
+      appendHelpLines(this, 'tooltipStp');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(30);
@@ -132,6 +235,7 @@
           .appendField(new Blockly.FieldDropdown(regOptions), 'X')
           .appendField(' r')
           .appendField(new Blockly.FieldDropdown(regOptions), 'Y');
+      appendHelpLines(this, 'tooltipAdd');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(65);
@@ -147,6 +251,7 @@
           .appendField(new Blockly.FieldDropdown(regOptions), 'X')
           .appendField(' r')
           .appendField(new Blockly.FieldDropdown(regOptions), 'Y');
+      appendHelpLines(this, 'tooltipMul');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(65);
@@ -162,6 +267,7 @@
           .appendField(new Blockly.FieldDropdown(regOptions), 'X')
           .appendField(' r')
           .appendField(new Blockly.FieldDropdown(regOptions), 'Y');
+      appendHelpLines(this, 'tooltipPow');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(65);
@@ -193,7 +299,7 @@
     return 'ISN r' + (block.getFieldValue('REG') || '0');
   };
   generator['miniasm_jmp'] = function(block) {
-    return 'JMP l' + (block.getFieldValue('LINE') || 0);
+    return 'JMP i' + (block.getFieldValue('LINE') || 1);
   };
   generator['miniasm_stp'] = function() {
     return 'STP';
@@ -265,6 +371,9 @@
     blockXml.appendChild(startEl);
     try {
       Blockly.Xml.domToWorkspace(blockXml, workspace);
+      workspace.getAllBlocks(false).forEach(function(b) {
+        if (b.type === 'miniasm_set') setBlockUpdateValueFields(b);
+      });
       updateBlockLineNumbers(workspace);
     } catch (e) {
       console.warn('codeToBlocks:', e);
@@ -305,8 +414,8 @@
     if (op === 'ISZ' && tokens.length >= 2) return { type: 'miniasm_isz', REG: tokens[1].replace(/^r/, '') };
     if (op === 'ISN' && tokens.length >= 2) return { type: 'miniasm_isn', REG: tokens[1].replace(/^r/, '') };
     if (op === 'JMP' && tokens.length >= 2) {
-      var lineNum = tokens[1].charAt(0) === 'l' ? parseInt(tokens[1].slice(1), 10) : parseInt(tokens[1], 10);
-      return { type: 'miniasm_jmp', LINE: isNaN(lineNum) ? 0 : lineNum };
+      var lineNum = tokens[1].charAt(0) === 'i' ? parseInt(tokens[1].slice(1), 10) : parseInt(tokens[1], 10);
+      return { type: 'miniasm_jmp', LINE: (isNaN(lineNum) || lineNum < 1) ? 1 : lineNum };
     }
     if (op === 'STP') return { type: 'miniasm_stp' };
     // Unlockable instructions
@@ -392,11 +501,35 @@
   // ----- Workspace creation -----
   function createWorkspace(container, allowedOpcodes) {
     var toolbox = buildToolboxXml(allowedOpcodes);
-    return Blockly.inject(container, {
+    var workspace = Blockly.inject(container, {
       toolbox: toolbox,
       grid: { spacing: 20, length: 3, colour: '#313244', snap: true },
       zoom: { controls: true, wheel: true, startScale: 1, maxScale: 2, minScale: 0.5 }
     });
+    if (workspace.addChangeListener) {
+      workspace.addChangeListener(function(event) {
+        var fieldName = event.name || event.field;
+        if ((fieldName === 'DEST_TYPE' || fieldName === 'SRC_TYPE') && event.blockId) {
+          var block = workspace.getBlockById ? workspace.getBlockById(event.blockId) : null;
+          if (!block && workspace.getAllBlocks) {
+            var all = workspace.getAllBlocks(false);
+            for (var i = 0; i < all.length; i++) {
+              var b = all[i];
+              if ((b.id || b.getId && b.getId()) === event.blockId) {
+                block = b;
+                break;
+              }
+            }
+          }
+          if (block && block.type === 'miniasm_set') {
+            setTimeout(function() {
+              if (block.workspace && !block.isDisposed()) setBlockUpdateValueFields(block);
+            }, 0);
+          }
+        }
+      });
+    }
+    return workspace;
   }
 
   // ----- PC indicator & line numbers -----
@@ -446,7 +579,7 @@
       if (block.type !== 'miniasm_start' && generator[block.type]) {
         var field = block.getField('LINE_NUM');
         if (field && typeof field.setValue === 'function') {
-          field.setValue(String(lineNum));
+          field.setValue('[' + lineNum + ']');
         }
         lineNum++;
       }

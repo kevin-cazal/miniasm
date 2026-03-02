@@ -65,7 +65,7 @@
       tooltipDec: 'DEC rN — Decrement register rN by 1.',
       tooltipIsz: 'ISZ rN — If register rN is zero, skip the next instruction.',
       tooltipIsn: 'ISN rN — If register rN is negative, skip the next instruction.',
-      tooltipJmp: 'JMP lN — Jump to line number N (unconditional goto).',
+      tooltipJmp: 'JMP iN — Jump to instruction N (unconditional goto).',
       tooltipStp: 'STP — Stop execution and halt the program.',
       tooltipAdd: 'ADD rX rY — rX = rX + rY  (rY is preserved)',
       tooltipMul: 'MUL rX rY — rX = rX × rY  (rY is preserved)',

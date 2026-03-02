@@ -46,7 +46,7 @@
       'r': 'Register',
       '#': 'Immediate',
       '@': 'MemoryAddress',
-      'l': 'InstructionNumber',
+      'i': 'InstructionNumber',
     },
   };
 

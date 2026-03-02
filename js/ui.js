@@ -201,7 +201,7 @@
       el.textContent = T('halted');
       el.className = 'status halted';
     } else {
-      el.textContent = T('pcLabel') + machine.pc;
+      el.textContent = T('pcLabel') + (machine.pc + 1);
       el.className = 'status running';
     }
   }

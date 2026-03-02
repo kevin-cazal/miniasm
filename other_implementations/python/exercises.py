@@ -6,7 +6,7 @@ the instructions you've unlocked so far. Completing an exercise unlocks
 a new instruction you can use in future exercises.
 
 Usage:
-    python exercises.py
+    cd other_implementations/python && python exercises.py
 """
 
 import json
