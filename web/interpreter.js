@@ -15,7 +15,7 @@ function parseOperand(token) {
     case 'r': return { type: 'Register', value };
     case '#': return { type: 'Immediate', value };
     case '@': return { type: 'MemoryAddress', value };
-    case 'l': return { type: 'LineNumber', value };
+    case 'l': return { type: 'InstructionNumber', value };
     default: throw new Error(`Unknown token prefix: ${prefix}`);
   }
 }
@@ -64,7 +64,7 @@ const INST = {
     run(m) { m.halted = true; }
   },
   JMP: {
-    args: [['LineNumber']],
+    args: [['InstructionNumber']],
     run(m, line) { m.pc = line.value - 1; }  // source line numbers are 1-based (l1=first, l2=second, …)
   }
 };
