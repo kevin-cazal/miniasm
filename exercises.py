@@ -16,6 +16,7 @@ from interpreter import (
     Machine, Instruction, Register,
     Inst, Union,
 )
+from config import REGISTER_COUNT, REGISTER_PREFIX, MAX_STEPS
 
 # ─── Directory / file paths ───────────────────────────────────────────────────
 
@@ -412,12 +413,7 @@ def validate_allowed_instructions(lines: list[str], allowed: list[str]) -> list[
 
 # ─── Register / memory helpers ────────────────────────────────────────────────
 
-REG_MAP = {
-    "r0": Register.R0,
-    "r1": Register.R1,
-    "r2": Register.R2,
-    "r3": Register.R3,
-}
+REG_MAP = {f'{REGISTER_PREFIX}{i}': Register(i) for i in range(REGISTER_COUNT)}
 
 
 def _set_inputs(machine: Machine, inputs: dict) -> None:
@@ -436,8 +432,6 @@ def _get_actual(machine: Machine, key: str) -> int:
     return machine.registers[REG_MAP[key]]
 
 # ─── Test runner ──────────────────────────────────────────────────────────────
-
-MAX_STEPS = 100_000
 
 
 def run_test(code_file: str, inputs: dict) -> tuple:

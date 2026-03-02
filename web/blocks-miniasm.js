@@ -8,8 +8,9 @@
   if (!Blockly) return;
 
   var T = global.MiniASMLang.T;
+  var CFG = global.MiniASMConfig;
 
-  var regOptions = [['0', '0'], ['1', '1'], ['2', '2'], ['3', '3']];
+  var regOptions = CFG.regOptions;
 
   // ----- Block definitions -----
   Blockly.Blocks['miniasm_start'] = {

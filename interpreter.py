@@ -3,6 +3,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Union, get_args
 
+from config import REGISTER_COUNT, REGISTER_PREFIX, MEMORY_SIZE, RANDOM_MAX, MAX_STEPS
+
+# ─── Operand types ─────────────────────────────────────────────────────────────
+
 class Immediate(int):
     """An immediate/literal value."""
     pass
@@ -20,18 +24,21 @@ class InstructionNumber(int):
 class Instruction:
     pass
 
-class Register(Enum):
-    R0 = 0
-    R1 = 1
-    R2 = 2
-    R3 = 3
+# ─── Register enum (generated from config) ────────────────────────────────────
+
+Register = Enum('Register', {f'R{i}': i for i in range(REGISTER_COUNT)})
+
 
 @dataclass
 class Machine:
     instructions: list[str]
     code: list[Instruction]
-    registers: dict[Register, int] = field(default_factory=lambda: {r: random.randint(0, 255) for r in Register})
-    memory: list[int] = field(default_factory=lambda: [random.randint(0, 255) for _ in range(64)])
+    registers: dict[Register, int] = field(
+        default_factory=lambda: {r: random.randint(0, RANDOM_MAX - 1) for r in Register}
+    )
+    memory: list[int] = field(
+        default_factory=lambda: [random.randint(0, RANDOM_MAX - 1) for _ in range(MEMORY_SIZE)]
+    )
     pc: int = 0
     halted: bool = False
 
@@ -44,7 +51,7 @@ class Machine:
 
     def parse_instruction(self, line) -> Instruction:
         Token_types = {
-            "r": Register,
+            REGISTER_PREFIX: Register,
             "#": Immediate,
             "@": MemoryAddress,
             "l": InstructionNumber
@@ -86,20 +93,20 @@ class Machine:
             print(f"{idx}: {instr}{marker}")
 
     def print_memory(self):
-        for i in range(0, 64, 8):
+        for i in range(0, MEMORY_SIZE, 8):
             print([f"{x:02x}" for x in self.memory[i:i+8]], sep=" ")
 
     def print_registers(self):
         print("Registers:")
         for reg, val in self.registers.items():
-            print(f"r{reg.value}: {val}")
+            print(f"{REGISTER_PREFIX}{reg.value}: {val}")
 
     def execute(self):
         index = self.pc
         self.pc += 1
         self.code[index][1].execute(self)
 
-    def run(self, max_steps=100000):
+    def run(self, max_steps=MAX_STEPS):
         steps = 0
         while self.pc < len(self.code) and not self.halted and steps < max_steps:
             self.execute()
@@ -117,7 +124,7 @@ class Machine:
             print("-" * 40)
         self.print_code()
         self.print_registers()
-        print(f"\nProgram halted. r0 = {self.registers[Register.R0]}")
+        print(f"\nProgram halted. {REGISTER_PREFIX}0 = {self.registers[Register(0)]}")
 
 
 @dataclass

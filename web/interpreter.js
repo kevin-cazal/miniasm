@@ -1,123 +1,157 @@
 /**
  * MiniASM VM — vanilla JavaScript implementation.
- * Instruction set: SET (Reg/Mem, Reg/Mem/Immediate), INC, DEC, ISZ, ISN, STP, JMP.
+ * All tuneable knobs (register count, memory size, …) come from config.js.
+ * Instruction set: SET, INC, DEC, ISZ, ISN, STP, JMP  (+ unlockable ADD, MUL, POW).
  */
 
-const Register = { R0: 0, R1: 1, R2: 2, R3: 3 };
-const REG_NAMES = ['r0', 'r1', 'r2', 'r3'];
+// ─── Read configuration (falls back to sensible defaults) ────────
+var _cfg = (typeof window !== 'undefined' && window.MiniASMConfig) || {};
 
-function parseOperand(token) {
-  if (!token || token.length < 2) throw new Error(`Invalid token: ${token}`);
-  const prefix = token[0];
-  const value = parseInt(token.slice(1), 10);
-  if (Number.isNaN(value)) throw new Error(`Invalid number in token: ${token}`);
-  switch (prefix) {
-    case 'r': return { type: 'Register', value };
-    case '#': return { type: 'Immediate', value };
-    case '@': return { type: 'MemoryAddress', value };
-    case 'l': return { type: 'InstructionNumber', value };
-    default: throw new Error(`Unknown token prefix: ${prefix}`);
+var NUM_REGISTERS    = (_cfg.registers && _cfg.registers.count) || 4;
+var REG_PREFIX       = (_cfg.registers && _cfg.registers.prefix) || 'r';
+var MEMORY_SIZE      = (_cfg.memory && _cfg.memory.size) || 64;
+var RANDOM_MAX       = _cfg.randomMax || 256;
+var MAX_STEPS_DEFAULT = _cfg.maxSteps || 100000;
+var OPERAND_TYPES    = _cfg.operandTypes || {
+  'r': 'Register', '#': 'Immediate', '@': 'MemoryAddress', 'l': 'InstructionNumber'
+};
+
+// ─── Derived values ──────────────────────────────────────────────
+
+var Register = _cfg.Register || {};
+var REG_NAMES = _cfg.REG_NAMES || [];
+
+// Compute if config wasn't loaded
+if (!_cfg.Register) {
+  for (var _i = 0; _i < NUM_REGISTERS; _i++) {
+    Register['R' + _i] = _i;
+    REG_NAMES.push(REG_PREFIX + _i);
   }
 }
 
-const INST = {
+// ─── Operand parser ──────────────────────────────────────────────
+
+function parseOperand(token) {
+  if (!token || token.length < 2) throw new Error('Invalid token: ' + token);
+  var prefix = token[0];
+  var value = parseInt(token.slice(1), 10);
+  if (Number.isNaN(value)) throw new Error('Invalid number in token: ' + token);
+  var typeName = OPERAND_TYPES[prefix];
+  if (!typeName) throw new Error('Unknown token prefix: ' + prefix);
+  return { type: typeName, value: value };
+}
+
+// ─── Instruction definitions ─────────────────────────────────────
+
+var INST = {
   SET: {
     args: [
       ['Register', 'MemoryAddress'],
       ['Register', 'MemoryAddress', 'Immediate']
     ],
-    run(m, dest, src) {
-      const v = getValue(m, src);
+    run: function (m, dest, src) {
+      var v = getValue(m, src);
       setValue(m, dest, v);
     }
   },
   INC: {
     args: [['Register']],
-    run(m, x) { m.registers[x.value] += 1; }
+    run: function (m, x) { m.registers[x.value] += 1; }
   },
   DEC: {
     args: [['Register']],
-    run(m, x) { m.registers[x.value] -= 1; }
+    run: function (m, x) { m.registers[x.value] -= 1; }
   },
   ISZ: {
     args: [['Register']],
-    run(m, x) { if (m.registers[x.value] === 0) m.pc += 1; }
+    run: function (m, x) { if (m.registers[x.value] === 0) m.pc += 1; }
   },
   ISN: {
     args: [['Register']],
-    run(m, x) { if (m.registers[x.value] < 0) m.pc += 1; }
+    run: function (m, x) { if (m.registers[x.value] < 0) m.pc += 1; }
   },
   ADD: {
     args: [['Register'], ['Register']],
-    run(m, x, y) { m.registers[x.value] += m.registers[y.value]; }
+    run: function (m, x, y) { m.registers[x.value] += m.registers[y.value]; }
   },
   MUL: {
     args: [['Register'], ['Register']],
-    run(m, x, y) { m.registers[x.value] *= m.registers[y.value]; }
+    run: function (m, x, y) { m.registers[x.value] *= m.registers[y.value]; }
   },
   POW: {
     args: [['Register'], ['Register']],
-    run(m, x, y) { m.registers[x.value] = Math.pow(m.registers[x.value], m.registers[y.value]); }
+    run: function (m, x, y) { m.registers[x.value] = Math.pow(m.registers[x.value], m.registers[y.value]); }
   },
   STP: {
     args: [],
-    run(m) { m.halted = true; }
+    run: function (m) { m.halted = true; }
   },
   JMP: {
     args: [['InstructionNumber']],
-    run(m, line) { m.pc = line.value - 1; }  // source line numbers are 1-based (l1=first, l2=second, …)
+    run: function (m, line) { m.pc = line.value - 1; }  // source line numbers are 1-based
   }
 };
+
+// ─── Argument validation ─────────────────────────────────────────
 
 function checkArg(opcode, argIndex, operand, allowedTypes) {
   if (!allowedTypes.includes(operand.type)) {
     throw new Error(
-      `Argument ${argIndex + 1} for ${opcode}: expected one of [${allowedTypes.join(', ')}], got ${operand.type}`
+      'Argument ' + (argIndex + 1) + ' for ' + opcode +
+      ': expected one of [' + allowedTypes.join(', ') + '], got ' + operand.type
     );
   }
 }
 
+// ─── Value get / set (extend here when adding new operand types) ─
+
 function getValue(m, op) {
   switch (op.type) {
-    case 'Register': return m.registers[op.value];
+    case 'Register':      return m.registers[op.value];
     case 'MemoryAddress': return m.memory[op.value];
-    case 'Immediate': return op.value;
-    default: throw new Error(`Cannot get value for type: ${op.type}`);
+    case 'Immediate':     return op.value;
+    default: throw new Error('Cannot get value for type: ' + op.type);
   }
 }
 
 function setValue(m, dest, value) {
   switch (dest.type) {
-    case 'Register': m.registers[dest.value] = value; break;
+    case 'Register':      m.registers[dest.value] = value; break;
     case 'MemoryAddress': m.memory[dest.value] = value; break;
-    default: throw new Error(`Cannot set value for type: ${dest.type}`);
+    default: throw new Error('Cannot set value for type: ' + dest.type);
   }
 }
+
+// ─── Instruction parsing ─────────────────────────────────────────
 
 function parseInstruction(line) {
-  const tokens = line.split(/\s+/).map(s => s.trim()).filter(Boolean);
+  var tokens = line.split(/\s+/).map(function (s) { return s.trim(); }).filter(Boolean);
   if (tokens.length === 0) return null;
-  const opcode = tokens[0];
-  const info = INST[opcode];
-  if (!info) throw new Error(`Unknown opcode: ${opcode}`);
-  const givenArgs = tokens.slice(1);
+  var opcode = tokens[0];
+  var info = INST[opcode];
+  if (!info) throw new Error('Unknown opcode: ' + opcode);
+  var givenArgs = tokens.slice(1);
   if (info.args.length !== givenArgs.length) {
-    throw new Error(`Expected ${info.args.length} arguments for ${opcode}, got ${givenArgs.length}`);
+    throw new Error('Expected ' + info.args.length + ' arguments for ' + opcode + ', got ' + givenArgs.length);
   }
-  const operands = givenArgs.map(t => parseOperand(t));
-  for (let i = 0; i < info.args.length; i++) {
+  var operands = givenArgs.map(function (t) { return parseOperand(t); });
+  for (var i = 0; i < info.args.length; i++) {
     checkArg(opcode, i, operands[i], info.args[i]);
   }
-  return { opcode, operands };
+  return { opcode: opcode, operands: operands };
 }
 
+// ─── Machine creation ────────────────────────────────────────────
+
 function createMachine() {
-  const rand = () => Math.floor(Math.random() * 256);
+  var rand = function () { return Math.floor(Math.random() * RANDOM_MAX); };
+  var regs = {};
+  for (var i = 0; i < NUM_REGISTERS; i++) regs[i] = rand();
   return {
     instructions: [],
     code: [],
-    registers: { [Register.R0]: rand(), [Register.R1]: rand(), [Register.R2]: rand(), [Register.R3]: rand() },
-    memory: Array.from({ length: 64 }, rand),
+    registers: regs,
+    memory: Array.from({ length: MEMORY_SIZE }, rand),
     pc: 0,
     halted: false
   };
@@ -129,7 +163,7 @@ function createMachine() {
  * - object: { source: string } or { lines: string[] }
  */
 function loadProgram(machine, program) {
-  let text;
+  var text;
   if (typeof program === 'string') {
     text = program;
   } else if (program && typeof program === 'object') {
@@ -139,24 +173,27 @@ function loadProgram(machine, program) {
   } else {
     throw new Error('Program must be a string or { source | lines } object');
   }
-  const allLines = text.split(/\n/).map(l => l.trim());
-  const lines = [];
-  const lineNumbers = [];
-  for (let i = 0; i < allLines.length; i++) {
-    const line = allLines[i];
+  var allLines = text.split(/\n/).map(function (l) { return l.trim(); });
+  var lines = [];
+  var lineNumbers = [];
+  for (var i = 0; i < allLines.length; i++) {
+    var line = allLines[i];
     if (line && !line.startsWith(';')) {
       lines.push(line);
       lineNumbers.push(i + 1);
     }
   }
   machine.instructions = lines;
-  machine.code = lines.map((line, idx) => [idx, parseInstruction(line)]);
+  machine.code = lines.map(function (line, idx) { return [idx, parseInstruction(line)]; });
   machine.lineNumbers = lineNumbers;
   return machine;
 }
 
+// ─── Execution ───────────────────────────────────────────────────
+
 function execute(machine) {
-  const [index, instr] = machine.code[machine.pc];
+  var pair = machine.code[machine.pc];
+  var instr = pair[1];
   INST[instr.opcode].run(machine, ...instr.operands);
   if (machine.halted) return;
   if (instr.opcode !== 'JMP') {
@@ -164,8 +201,9 @@ function execute(machine) {
   }
 }
 
-function run(machine, maxSteps = 100000) {
-  let steps = 0;
+function run(machine, maxSteps) {
+  if (maxSteps === undefined) maxSteps = MAX_STEPS_DEFAULT;
+  var steps = 0;
   while (machine.pc < machine.code.length && !machine.halted && steps < maxSteps) {
     execute(machine);
     steps += 1;
@@ -173,59 +211,70 @@ function run(machine, maxSteps = 100000) {
   return machine.halted;
 }
 
+// ─── Debug printing ──────────────────────────────────────────────
+
 function printCode(machine) {
-  for (const [idx, instr] of machine.code) {
-    const marker = idx === machine.pc ? ' <== PC' : '';
-    const argsStr = instr.operands.map(op => {
+  for (var c = 0; c < machine.code.length; c++) {
+    var idx = machine.code[c][0];
+    var instr = machine.code[c][1];
+    var marker = idx === machine.pc ? ' <== PC' : '';
+    var argsStr = instr.operands.map(function (op) {
       if (op.type === 'Register') return REG_NAMES[op.value];
       if (op.type === 'Immediate') return '#' + op.value;
       if (op.type === 'MemoryAddress') return '@' + op.value;
       return 'l' + op.value;
     }).join(' ');
-    console.log(`${idx}: ${instr.opcode} ${argsStr}${marker}`);
+    console.log(idx + ': ' + instr.opcode + ' ' + argsStr + marker);
   }
 }
 
 function printRegisters(machine) {
   console.log('Registers:');
-  for (let i = 0; i <= 3; i++) {
-    console.log(`r${i}: ${machine.registers[i]}`);
+  for (var i = 0; i < NUM_REGISTERS; i++) {
+    console.log(REG_NAMES[i] + ': ' + machine.registers[i]);
   }
 }
 
 function printMemory(machine) {
-  for (let i = 0; i < 64; i += 8) {
-    const row = machine.memory.slice(i, i + 8).map(x => x.toString(16).padStart(2, '0'));
+  for (var i = 0; i < MEMORY_SIZE; i += 8) {
+    var row = machine.memory.slice(i, i + 8).map(function (x) { return x.toString(16).padStart(2, '0'); });
     console.log(row.join(' '));
   }
 }
 
-// Export for use as module or in browser (code from DOM via loadProgram(m, { source: el.value }))
+// ─── Export ──────────────────────────────────────────────────────
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    Register,
-    createMachine,
-    loadProgram,
-    execute,
-    run,
-    parseInstruction,
-    printCode,
-    printRegisters,
-    printMemory,
-    INST
+    Register: Register,
+    REG_NAMES: REG_NAMES,
+    NUM_REGISTERS: NUM_REGISTERS,
+    MEMORY_SIZE: MEMORY_SIZE,
+    createMachine: createMachine,
+    loadProgram: loadProgram,
+    execute: execute,
+    run: run,
+    parseInstruction: parseInstruction,
+    printCode: printCode,
+    printRegisters: printRegisters,
+    printMemory: printMemory,
+    INST: INST
   };
 }
 if (typeof window !== 'undefined') {
   window.MiniASM = {
-    Register,
-    createMachine,
-    loadProgram,
-    execute,
-    run,
-    parseInstruction,
-    printCode,
-    printRegisters,
-    printMemory,
-    INST
+    Register: Register,
+    REG_NAMES: REG_NAMES,
+    NUM_REGISTERS: NUM_REGISTERS,
+    MEMORY_SIZE: MEMORY_SIZE,
+    createMachine: createMachine,
+    loadProgram: loadProgram,
+    execute: execute,
+    run: run,
+    parseInstruction: parseInstruction,
+    printCode: printCode,
+    printRegisters: printRegisters,
+    printMemory: printMemory,
+    INST: INST
   };
 }

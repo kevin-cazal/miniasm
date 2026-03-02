@@ -4,10 +4,11 @@
  */
 (function () {
   var T = window.MiniASMLang.T;
+  var CFG = window.MiniASMConfig;
 
-  var REG_NAMES = ['r0', 'r1', 'r2', 'r3'];
-  var MEMORY_SIZE = 64;
-  var MEMORY_COLS = 16;
+  var REG_NAMES   = CFG.REG_NAMES;
+  var MEMORY_SIZE = CFG.memory.size;
+  var MEMORY_COLS = CFG.memory.columns;
 
   // ─── State ──────────────────────────────────────────────────────────
   var editor = null;
@@ -161,7 +162,7 @@
 
   function commitRegisterEdit(td) {
     var reg = parseInt(td.getAttribute('data-reg'), 10);
-    if (isNaN(reg) || reg < 0 || reg > 3) return;
+    if (isNaN(reg) || reg < 0 || reg >= CFG.registers.count) return;
     var v = parseInt(td.textContent.trim(), 10);
     if (!isNaN(v)) {
       machine.registers[reg] = v;

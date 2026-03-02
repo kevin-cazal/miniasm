@@ -17,6 +17,7 @@
 (function () {
   var T = window.MiniASMLang.T;
   var lang = window.MiniASMLang.current();
+  var CFG = window.MiniASMConfig;
 
   var STORAGE_KEY = 'miniasm-progress';
 
@@ -168,8 +169,10 @@
   function runSingleTest(source, inputs) {
     var machine = window.MiniASM.createMachine();
     // Start with clean state
-    machine.registers = { 0: 0, 1: 0, 2: 0, 3: 0 };
-    machine.memory = new Array(64).fill(0);
+    var regs = {};
+    for (var r = 0; r < CFG.registers.count; r++) regs[r] = 0;
+    machine.registers = regs;
+    machine.memory = new Array(CFG.memory.size).fill(0);
 
     try {
       window.MiniASM.loadProgram(machine, { source: source });
