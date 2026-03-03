@@ -57,10 +57,10 @@ describe('MiniASM Exercise System', () => {
         expect(cat).toHaveProperty('name');
       });
     });
-    it('EXERCISES has at least 7 entries (4 tutorials + 3 challenges)', () => {
-      expect(EXERCISES.length).toBeGreaterThanOrEqual(7);
+    it('EXERCISES has at least 14 entries (6 tutorials + 8 challenges)', () => {
+      expect(EXERCISES.length).toBeGreaterThanOrEqual(14);
     });
-    it('each exercise has id, category, type, available, tests, unlocks', () => {
+    it('each exercise has id, category, type, requires, available, tests, unlocks', () => {
       const CATEGORIES = getExercisesAPI().CATEGORIES;
       const catIds = CATEGORIES.map((c) => c.id);
       EXERCISES.forEach((ex) => {
@@ -69,6 +69,8 @@ describe('MiniASM Exercise System', () => {
         expect(catIds).toContain(ex.category);
         expect(ex).toHaveProperty('type');
         expect(['tutorial', 'challenge']).toContain(ex.type);
+        expect(ex).toHaveProperty('requires');
+        expect(Array.isArray(ex.requires)).toBe(true);
         expect(ex).toHaveProperty('available');
         expect(Array.isArray(ex.available)).toBe(true);
         expect(ex).toHaveProperty('tests');
@@ -79,6 +81,12 @@ describe('MiniASM Exercise System', () => {
           expect(t).toHaveProperty('expected');
         });
       });
+    });
+    it('CATEGORIES includes comparisons', () => {
+      const CATEGORIES = getExercisesAPI().CATEGORIES;
+      const catIds = CATEGORIES.map((c) => c.id);
+      expect(catIds).toContain('arithmetic');
+      expect(catIds).toContain('comparisons');
     });
   });
 
@@ -143,6 +151,24 @@ describe('MiniASM Exercise System', () => {
       markCompleted(5);
       expect(isAvailable(pow)).toBe(true);
     });
+    it('Comparisons tutorial (id=7) requires all Arithmetic completed', () => {
+      const t7 = EXERCISES.find((e) => e.id === 7);
+      if (!t7) return;
+      expect(isAvailable(t7)).toBe(false);
+      for (var i = 0; i <= 5; i++) markCompleted(i);
+      expect(isAvailable(t7)).toBe(false);
+      markCompleted(6);
+      expect(isAvailable(t7)).toBe(true);
+    });
+    it('SUB challenge (id=9) requires tutorials 7-8 completed', () => {
+      const sub = EXERCISES.find((e) => e.id === 9);
+      if (!sub) return;
+      expect(isAvailable(sub)).toBe(false);
+      for (var i = 0; i <= 7; i++) markCompleted(i);
+      expect(isAvailable(sub)).toBe(false);
+      markCompleted(8);
+      expect(isAvailable(sub)).toBe(true);
+    });
   });
 
   describe('getUnlockedInstructions', () => {
@@ -176,6 +202,18 @@ describe('MiniASM Exercise System', () => {
       expect(u).toContain('MUL');
       expect(u).toContain('POW');
     });
+    it('returns SUB after exercise 9', () => {
+      markCompleted(9);
+      expect(getUnlockedInstructions()).toContain('SUB');
+    });
+    it('returns ADD, MUL, POW, SUB after all arithmetic + SUB challenge', () => {
+      for (var i = 4; i <= 9; i++) markCompleted(i);
+      const u = getUnlockedInstructions();
+      expect(u).toContain('ADD');
+      expect(u).toContain('MUL');
+      expect(u).toContain('POW');
+      expect(u).toContain('SUB');
+    });
   });
 
   describe('effectiveAvailable', () => {
@@ -192,6 +230,11 @@ describe('MiniASM Exercise System', () => {
     it('for loop tutorial (id=3) does NOT include SET', () => {
       const ex = EXERCISES.find((e) => e.id === 3);
       expect(effectiveAvailable(ex)).not.toContain('SET');
+    });
+    it('for ABS challenge (id=10) includes SUB when exercise 9 completed', () => {
+      markCompleted(9);
+      const ex = EXERCISES.find((e) => e.id === 10);
+      expect(effectiveAvailable(ex)).toContain('SUB');
     });
   });
 
@@ -387,6 +430,186 @@ describe('MiniASM Exercise System', () => {
       expect(result.forbidden).toBeUndefined();
       expect(result.results.length).toBe(ex.tests.length);
       expect(typeof result.allPassed).toBe('boolean');
+    });
+  });
+
+  // ─── Comparisons & Logic tutorials ────────────────────────────
+
+  describe('runAllTests (tutorial 7: Going Down)', () => {
+    let ex;
+    beforeEach(() => { ex = getExercisesAPI().EXERCISES.find((e) => e.id === 7); });
+
+    it('passes with correct solution', () => {
+      const result = runAllTests(ex, 'SET r0 r2\nDEC r0\nDEC r0\nDEC r0\nDEC r0\nDEC r0\nSTP');
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails without enough DECs', () => {
+      const result = runAllTests(ex, 'SET r0 r2\nDEC r0\nDEC r0\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  describe('runAllTests (tutorial 8: Which Way?)', () => {
+    let ex;
+    beforeEach(() => { ex = getExercisesAPI().EXERCISES.find((e) => e.id === 8); });
+
+    it('passes with correct solution', () => {
+      const result = runAllTests(ex, 'SET r0 #0\nISN r2\nJMP i5\nSET r0 #1\nSTP');
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when always returning 1', () => {
+      const result = runAllTests(ex, 'SET r0 #1\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+    it('fails when always returning 0', () => {
+      const result = runAllTests(ex, 'SET r0 #0\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  // ─── Comparisons & Logic challenges ───────────────────────────
+
+  describe('runAllTests (challenge 9: SUB)', () => {
+    let ex;
+    beforeEach(() => { ex = getExercisesAPI().EXERCISES.find((e) => e.id === 9); });
+
+    const passingSource = [
+      'SET r0 r2',
+      'ISZ r3',
+      'JMP i5',
+      'STP',
+      'DEC r0',
+      'DEC r3',
+      'JMP i2',
+    ].join('\n');
+
+    it('passes with correct DEC-loop solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails with addition solution', () => {
+      const result = runAllTests(ex, 'SET r0 r2\nISZ r3\nJMP i5\nSTP\nINC r0\nDEC r3\nJMP i2');
+      expect(result.allPassed).toBe(false);
+    });
+    it('forbids SUB instruction (it is the unlock)', () => {
+      const result = runAllTests(ex, 'SET r0 r2\nSUB r0 r3\nSTP');
+      expect(result.forbidden).toBeDefined();
+      expect(result.forbidden.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('runAllTests (challenge 10: ABS)', () => {
+    let ex;
+    beforeEach(() => {
+      ex = getExercisesAPI().EXERCISES.find((e) => e.id === 10);
+      // Unlock SUB so it becomes available via effectiveAvailable
+      markCompleted(9);
+    });
+
+    const passingSource = [
+      'SET r0 r2',
+      'ISN r0',
+      'JMP i7',
+      'SET r1 #0',
+      'SUB r1 r0',
+      'SET r0 r1',
+      'STP',
+    ].join('\n');
+
+    it('passes with correct solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when just copying r2 (negative inputs fail)', () => {
+      const result = runAllTests(ex, 'SET r0 r2\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  describe('runAllTests (challenge 11: SGN)', () => {
+    let ex;
+    beforeEach(() => {
+      ex = getExercisesAPI().EXERCISES.find((e) => e.id === 11);
+      markCompleted(9);
+    });
+
+    const passingSource = [
+      'ISZ r2',
+      'JMP i5',
+      'SET r0 #0',
+      'STP',
+      'ISN r2',
+      'JMP i10',
+      'SET r0 #0',
+      'DEC r0',
+      'STP',
+      'SET r0 #1',
+      'STP',
+    ].join('\n');
+
+    it('passes with correct three-branch solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when always returning 1', () => {
+      const result = runAllTests(ex, 'SET r0 #1\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  describe('runAllTests (challenge 12: MIN)', () => {
+    let ex;
+    beforeEach(() => {
+      ex = getExercisesAPI().EXERCISES.find((e) => e.id === 12);
+      markCompleted(9);
+    });
+
+    const passingSource = [
+      'SET r0 r2',
+      'SUB r0 r3',
+      'ISN r0',
+      'JMP i7',
+      'SET r0 r2',
+      'STP',
+      'SET r0 r3',
+      'STP',
+    ].join('\n');
+
+    it('passes with correct SUB-compare solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when always returning r2', () => {
+      const result = runAllTests(ex, 'SET r0 r2\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  describe('runAllTests (challenge 13: MAX)', () => {
+    let ex;
+    beforeEach(() => {
+      ex = getExercisesAPI().EXERCISES.find((e) => e.id === 13);
+      markCompleted(9);
+    });
+
+    const passingSource = [
+      'SET r0 r2',
+      'SUB r0 r3',
+      'ISN r0',
+      'JMP i7',
+      'SET r0 r3',
+      'STP',
+      'SET r0 r2',
+      'STP',
+    ].join('\n');
+
+    it('passes with correct SUB-compare solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when always returning r2', () => {
+      const result = runAllTests(ex, 'SET r0 r2\nSTP');
+      expect(result.allPassed).toBe(false);
     });
   });
 });

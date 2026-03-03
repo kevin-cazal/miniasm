@@ -31,6 +31,7 @@
   // Add new categories here; items reference them via `category`.
   var CATEGORIES = [
     { id: 'arithmetic', name: 'Arithmetic' },
+    { id: 'comparisons', name: 'Comparisons & Logic' },
   ];
 
   // ─── Exercise data (structural / non-translatable) ─────────────────
@@ -39,6 +40,7 @@
   //   id          – unique number (determines ordering & prerequisite chain)
   //   category    – category id (matches CATEGORIES[].id)
   //   type        – 'tutorial' | 'challenge'
+  //   requires    – array of exercise IDs that must be completed first ([] = always available)
   //   available   – array of opcode strings the learner may use
   //   unlocks     – opcode string unlocked on completion (or null)
   //   tests       – array of { inputs, expected } — keys are 'r0'..'r3' or '@0'..'@63'
@@ -51,6 +53,7 @@
       id: 0,
       category: 'arithmetic',
       type: 'tutorial',
+      requires: [],
       available: PRIMITIVES,
       unlocks: null,
       tests: [
@@ -63,6 +66,7 @@
       id: 1,
       category: 'arithmetic',
       type: 'tutorial',
+      requires: [0],
       available: PRIMITIVES,
       unlocks: null,
       tests: [
@@ -75,6 +79,7 @@
       id: 2,
       category: 'arithmetic',
       type: 'tutorial',
+      requires: [1],
       available: PRIMITIVES,
       unlocks: null,
       tests: [
@@ -88,6 +93,7 @@
       id: 3,
       category: 'arithmetic',
       type: 'tutorial',
+      requires: [2],
       available: LOOP_PRIMITIVES,
       unlocks: null,
       tests: [
@@ -102,6 +108,7 @@
       id: 4,
       category: 'arithmetic',
       type: 'challenge',
+      requires: [3],
       available: PRIMITIVES,
       unlocks: 'ADD',
       tests: [
@@ -116,6 +123,7 @@
       id: 5,
       category: 'arithmetic',
       type: 'challenge',
+      requires: [4],
       available: PRIMITIVES.concat(['ADD']),
       unlocks: 'MUL',
       tests: [
@@ -131,6 +139,7 @@
       id: 6,
       category: 'arithmetic',
       type: 'challenge',
+      requires: [5],
       available: PRIMITIVES.concat(['ADD', 'MUL']),
       unlocks: 'POW',
       tests: [
@@ -140,6 +149,112 @@
         { inputs: { r2: 2, r3: 0  }, expected: { r0: 1  } },
         { inputs: { r2: 1, r3: 10 }, expected: { r0: 1  } },
         { inputs: { r2: 3, r3: 3  }, expected: { r0: 27 } },
+      ],
+    },
+
+    // ─── Comparisons & Logic — Tutorials (7–8) ──────────────────
+    {
+      id: 7,
+      category: 'comparisons',
+      type: 'tutorial',
+      requires: [6],
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 10 }, expected: { r0: 5  } },
+        { inputs: { r2: 5  }, expected: { r0: 0  } },
+        { inputs: { r2: 3  }, expected: { r0: -2 } },
+        { inputs: { r2: 0  }, expected: { r0: -5 } },
+      ],
+    },
+    {
+      id: 8,
+      category: 'comparisons',
+      type: 'tutorial',
+      requires: [7],
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 5   }, expected: { r0: 0 } },
+        { inputs: { r2: 0   }, expected: { r0: 0 } },
+        { inputs: { r2: -1  }, expected: { r0: 1 } },
+        { inputs: { r2: -10 }, expected: { r0: 1 } },
+      ],
+    },
+    // ─── Comparisons & Logic — Challenges (9–13) ────────────────
+    {
+      id: 9,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [8],
+      available: PRIMITIVES,
+      unlocks: 'SUB',
+      tests: [
+        { inputs: { r2: 5,  r3: 3  }, expected: { r0: 2  } },
+        { inputs: { r2: 10, r3: 10 }, expected: { r0: 0  } },
+        { inputs: { r2: 3,  r3: 5  }, expected: { r0: -2 } },
+        { inputs: { r2: 0,  r3: 0  }, expected: { r0: 0  } },
+        { inputs: { r2: 7,  r3: 0  }, expected: { r0: 7  } },
+      ],
+    },
+    {
+      id: 10,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [9],
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 5   }, expected: { r0: 5   } },
+        { inputs: { r2: -5  }, expected: { r0: 5   } },
+        { inputs: { r2: 0   }, expected: { r0: 0   } },
+        { inputs: { r2: -1  }, expected: { r0: 1   } },
+        { inputs: { r2: 100 }, expected: { r0: 100 } },
+      ],
+    },
+    {
+      id: 11,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [10],
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 5   }, expected: { r0: 1  } },
+        { inputs: { r2: -3  }, expected: { r0: -1 } },
+        { inputs: { r2: 0   }, expected: { r0: 0  } },
+        { inputs: { r2: 100 }, expected: { r0: 1  } },
+        { inputs: { r2: -1  }, expected: { r0: -1 } },
+      ],
+    },
+    {
+      id: 12,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [11],
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 5,  r3: 3  }, expected: { r0: 3  } },
+        { inputs: { r2: 3,  r3: 5  }, expected: { r0: 3  } },
+        { inputs: { r2: 4,  r3: 4  }, expected: { r0: 4  } },
+        { inputs: { r2: 0,  r3: 10 }, expected: { r0: 0  } },
+        { inputs: { r2: -2, r3: 3  }, expected: { r0: -2 } },
+      ],
+    },
+    {
+      id: 13,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [12],
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 5,  r3: 3  }, expected: { r0: 5  } },
+        { inputs: { r2: 3,  r3: 5  }, expected: { r0: 5  } },
+        { inputs: { r2: 4,  r3: 4  }, expected: { r0: 4  } },
+        { inputs: { r2: 0,  r3: 10 }, expected: { r0: 10 } },
+        { inputs: { r2: -2, r3: 3  }, expected: { r0: 3  } },
       ],
     },
   ];
@@ -198,8 +313,15 @@
     saveProgress(progress);
   }
 
-  /** An exercise is available when every earlier exercise is completed. */
+  /** An exercise is available when all its prerequisites are completed. */
   function isAvailable(exercise) {
+    if (exercise.requires) {
+      for (var i = 0; i < exercise.requires.length; i++) {
+        if (!isCompleted(exercise.requires[i])) return false;
+      }
+      return true;
+    }
+    // Fallback for exercises without requires: all earlier exercises must be completed
     for (var i = 0; i < EXERCISES.length; i++) {
       if (EXERCISES[i].id < exercise.id && !isCompleted(EXERCISES[i].id)) {
         return false;

@@ -1,7 +1,7 @@
 /**
  * MiniASM VM — vanilla JavaScript implementation.
  * All tuneable knobs (register count, memory size, …) come from config.js.
- * Instruction set: SET, INC, DEC, ISZ, ISN, STP, JMP  (+ unlockable ADD, MUL, POW).
+ * Instruction set: SET, INC, DEC, ISZ, ISN, STP, JMP  (+ unlockable ADD, SUB, MUL, POW).
  */
 
 // ─── Read configuration (falls back to sensible defaults) ────────
@@ -73,6 +73,10 @@ var INST = {
   ADD: {
     args: [['Register'], ['Register']],
     run: function (m, x, y) { m.registers[x.value] += m.registers[y.value]; }
+  },
+  SUB: {
+    args: [['Register'], ['Register']],
+    run: function (m, x, y) { m.registers[x.value] -= m.registers[y.value]; }
   },
   MUL: {
     args: [['Register'], ['Register']],

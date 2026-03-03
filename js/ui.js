@@ -853,8 +853,13 @@
       var model = editor.getModel();
       if (!model) return String(lineNumber);
       var line = model.getLineContent(lineNumber);
-      if (line.trim().startsWith(';')) return '';
-      return String(lineNumber);
+      if (line.trim() === '' || line.trim().startsWith(';')) return '';
+      var codeLineIndex = 0;
+      for (var i = 1; i <= lineNumber; i++) {
+        var l = model.getLineContent(i);
+        if (l.trim() !== '' && !l.trim().startsWith(';')) codeLineIndex++;
+      }
+      return String(codeLineIndex);
     }
 
     function applyLineNumberOption() {

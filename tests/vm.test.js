@@ -37,6 +37,7 @@ describe('MiniASM VM', () => {
       expect(INST).toHaveProperty('ISZ');
       expect(INST).toHaveProperty('ISN');
       expect(INST).toHaveProperty('ADD');
+      expect(INST).toHaveProperty('SUB');
       expect(INST).toHaveProperty('MUL');
       expect(INST).toHaveProperty('POW');
       expect(INST).toHaveProperty('STP');
@@ -74,6 +75,12 @@ describe('MiniASM VM', () => {
     it('parses ADD rX rY', () => {
       const instr = parseInstruction('ADD r0 r1');
       expect(instr.opcode).toBe('ADD');
+      expect(instr.operands[0].value).toBe(0);
+      expect(instr.operands[1].value).toBe(1);
+    });
+    it('parses SUB rX rY', () => {
+      const instr = parseInstruction('SUB r0 r1');
+      expect(instr.opcode).toBe('SUB');
       expect(instr.operands[0].value).toBe(0);
       expect(instr.operands[1].value).toBe(1);
     });
@@ -275,6 +282,23 @@ describe('MiniASM VM', () => {
       expect(m.halted).toBe(true);
       expect(m.pc).toBe(0);
     });
+    it('SUB subtracts second register from first', () => {
+      const m = createMachine();
+      m.registers[0] = 10;
+      m.registers[1] = 3;
+      loadProgram(m, 'SUB r0 r1\nSTP');
+      execute(m);
+      expect(m.registers[0]).toBe(7);
+      expect(m.registers[1]).toBe(3);
+    });
+    it('SUB can produce negative results', () => {
+      const m = createMachine();
+      m.registers[0] = 3;
+      m.registers[1] = 5;
+      loadProgram(m, 'SUB r0 r1\nSTP');
+      execute(m);
+      expect(m.registers[0]).toBe(-2);
+    });
     it('ADD adds second register into first', () => {
       const m = createMachine();
       m.registers[0] = 10;
@@ -347,6 +371,33 @@ describe('MiniASM VM', () => {
       const halted = run(m);
       expect(halted).toBe(true);
       expect(m.registers[0]).toBe(8);
+    });
+    it('subtraction program: r2-r3 -> r0 using DEC loop', () => {
+      const m = createMachine();
+      m.registers[0] = 0;
+      m.registers[2] = 8;
+      m.registers[3] = 3;
+      const source = [
+        'SET r0 r2',
+        'ISZ r3',
+        'JMP i5',
+        'STP',
+        'DEC r0',
+        'DEC r3',
+        'JMP i2',
+      ].join('\n');
+      loadProgram(m, source);
+      const halted = run(m);
+      expect(halted).toBe(true);
+      expect(m.registers[0]).toBe(5);
+    });
+    it('subtraction using SUB instruction', () => {
+      const m = createMachine();
+      m.registers[0] = 15;
+      m.registers[1] = 6;
+      loadProgram(m, 'SUB r0 r1\nSTP');
+      run(m);
+      expect(m.registers[0]).toBe(9);
     });
     it('multiplication via ADD loop', () => {
       const m = createMachine();
