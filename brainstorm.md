@@ -4,6 +4,8 @@
 > turning challenges into "keys" that open new possibilities. The learner should
 > feel like they're building their own computer, one instruction at a time.
 
+**Implemented so far:** Arithmetic (tutorials 0–3, challenges ADD/MUL/POW), **Comparisons & Logic** (tutorials 7–8, challenges SUB/ABS/SGN/MIN/MAX), **Swaps & Rearrangement** (tutorial 14, challenges SWAP/ROTATE3/SORT2/SORT3). All other categories and the SYS/syscalls idea below are not yet implemented.
+
 ---
 
 ## Current instruction inventory
@@ -12,51 +14,53 @@
 |--------|-------------|
 | **Primitives** (always available) | `SET`, `INC`, `DEC`, `ISZ`, `ISN`, `STP`, `JMP` |
 | **Unlocked via Arithmetic** | `ADD`, `MUL`, `POW` |
-| **Proposed new** | `SUB`, `SWP`, `LDR`, `STR`, `DIV`, `MOD`, `SHL`, `SHR` |
+| **Unlocked via Comparisons** | `SUB` |
+| **Unlocked via Swaps** | `SWP` |
+| **Proposed new** | `LDR`, `STR`, `DIV`, `MOD`, `SHL`, `SHR` |
 
 ---
 
-## 📐 Category: Comparisons & Logic
+## 📐 Category: Comparisons & Logic — **✅ Implemented**
 
 > *Prerequisite: complete Arithmetic*
 > *Key unlock: SUB*
 
 ### Tutorials
-- **"Going Down"** — Subtract a fixed amount using DEC; introduces negative registers
-- **"Which Way?"** — Teaches ISN (if negative, skip): branch based on sign
+- **"Going Down"** — Subtract a fixed amount using DEC; introduces negative registers — ✅
+- **"Which Way?"** — Teaches ISN (if negative, skip): branch based on sign — ✅
 
 ### Challenges
-| # | Name | Goal | Unlocks |
-|---|------|------|---------|
-| 1 | **SUB** | `r0 = r2 − r3` | `SUB rX rY` |
-| 2 | **ABS** | `r0 = \|r2\|` (absolute value) | — |
-| 3 | **SGN** | `r0 = sign(r2)` → −1, 0, or +1 | — |
-| 4 | **MIN** | `r0 = min(r2, r3)` | — |
-| 5 | **MAX** | `r0 = max(r2, r3)` | — |
+| # | Name | Goal | Unlocks | Done |
+|---|------|------|---------|------|
+| 1 | **SUB** | `r0 = r2 − r3` | `SUB rX rY` | ✅ |
+| 2 | **ABS** | `r0 = \|r2\|` (absolute value) | — | ✅ |
+| 3 | **SGN** | `r0 = sign(r2)` → −1, 0, or +1 | — | ✅ |
+| 4 | **MIN** | `r0 = min(r2, r3)` | — | ✅ |
+| 5 | **MAX** | `r0 = max(r2, r3)` | — | ✅ |
 
 ---
 
-## 🔀 Category: Swaps & Rearrangement
+## 🔀 Category: Swaps & Rearrangement — **✅ Implemented**
 
 > *Prerequisite: complete Arithmetic*
 > *Key unlock: SWP — a simple but powerful utility instruction*
 
 ### Tutorials
-- **"The Spare Drawer"** — Swap two values using a third register as temp (classic 3-variable swap pattern)
+- **"The Spare Drawer"** — Swap two values using a third register as temp (classic 3-variable swap pattern) — ✅
 
 ### Challenges
-| # | Name | Goal | Unlocks |
-|---|------|------|---------|
-| 1 | **SWAP** | Swap r2 and r3 (result: r2 has old r3, r3 has old r2) | `SWP rX rY` |
-| 2 | **ROTATE3** | Rotate r1→r2→r3→r1 (cyclic shift of 3 values) | — |
-| 3 | **SORT2** | Put min(r2,r3) in r2, max(r2,r3) in r3 (conditional swap) | — |
-| 4 | **SORT3** | Sort r1 ≤ r2 ≤ r3 (only 3 values, but needs multiple comparisons) | — |
+| # | Name | Goal | Unlocks | Done |
+|---|------|------|---------|------|
+| 1 | **SWAP** | Swap r2 and r3 (result: r2 has old r3, r3 has old r2) | `SWP rX rY` | ✅ |
+| 2 | **ROTATE3** | Rotate r1→r2→r3→r1 (cyclic shift of 3 values) | — | ✅ |
+| 3 | **SORT2** | Put min(r2,r3) in r2, max(r2,r3) in r3 (conditional swap) | — | ✅ |
+| 4 | **SORT3** | Sort r1 ≤ r2 ≤ r3 (only 3 values, but needs multiple comparisons) | — | ✅ |
 
 > *SORT3 with only primitives + SWP is a great intro to sorting logic.*
 
 ---
 
-## 🗄️ Category: Memory & Pointers
+## 🗄️ Category: Memory & Pointers — *Not yet*
 
 > *Prerequisite: complete Arithmetic*
 > *Key unlocks: LDR, STR — the gateway to real algorithms*
@@ -81,7 +85,7 @@
 
 ---
 
-## 🔍 Category: Searching
+## 🔍 Category: Searching — *Not yet*
 
 > *Prerequisite: complete Memory & Pointers (needs LDR/STR)*
 
@@ -98,7 +102,7 @@
 
 ---
 
-## 📊 Category: Sorting
+## 📊 Category: Sorting — *Not yet*
 
 > *Prerequisite: complete Searching + Swaps*
 > *Capstone category — combines everything learned so far*
@@ -118,7 +122,7 @@
 
 ---
 
-## ➗ Category: Division & Remainders
+## ➗ Category: Division & Remainders — *Not yet*
 
 > *Prerequisite: complete Comparisons (needs SUB)*
 > *Key unlocks: DIV, MOD*
@@ -136,7 +140,7 @@
 
 ---
 
-## ⚡ Category: Bitwise & Shifting
+## ⚡ Category: Bitwise & Shifting — *Not yet*
 
 > *Prerequisite: complete Division & Remainders (needs MOD for even/odd)*
 > *Key unlocks: SHL, SHR*
@@ -159,7 +163,7 @@
 
 ---
 
-## 🔢 Category: Sequences & Series
+## 🔢 Category: Sequences & Series — *Not yet*
 
 > *Prerequisite: complete Arithmetic*
 > *No new unlocks — pure algorithmic thinking*
@@ -177,7 +181,7 @@
 
 ---
 
-## 🧮 Category: Number Theory
+## 🧮 Category: Number Theory — *Not yet*
 
 > *Prerequisite: complete Division & Remainders (needs MOD)*
 
@@ -190,7 +194,7 @@
 
 ---
 
-## 🔄 Category: Encoding & Decoding
+## 🔄 Category: Encoding & Decoding — *Not yet*
 
 > *Prerequisite: complete Memory & Pointers + Bitwise*
 > *Uses memory to store sequences of digits/bits*
@@ -207,7 +211,7 @@
 
 ---
 
-## 🏗️ Category: Data Structures
+## 🏗️ Category: Data Structures — *Not yet*
 
 > *Prerequisite: complete Memory & Pointers*
 > *Teaches stack/queue patterns using memory*
@@ -280,7 +284,7 @@ Each unlock genuinely enables new kinds of programs the learner couldn't write b
 ---
 ---
 
-# 💡 Big Idea: I/O via Syscalls — Like a Real OS
+# 💡 Big Idea: I/O via Syscalls — Like a Real OS — *Not yet*
 
 > *This would turn WDR+E from a "math toy" into something that feels like a real computer,
 > while teaching how operating systems actually work.*
@@ -346,7 +350,7 @@ but the mechanism is always the same.
 - When `SYS` with `read_char` is hit, the VM pauses and the screen panel
   gets focus with a blinking cursor, waiting for a keypress
 
-## Category: Syscalls & I/O
+## Category: Syscalls & I/O — *Not yet*
 
 > *Prerequisite: complete Memory & Pointers*
 > *Key unlock: SYS*
@@ -370,7 +374,7 @@ but the mechanism is always the same.
 > *The int→digit conversion in COUNTER is deceptively hard: DIV/MOD to extract digits,
 > add 48 for ASCII, print in the right order. Great capstone.*
 
-## Category: Games & Interactive (endgame)
+## Category: Games & Interactive (endgame) — *Not yet*
 
 > *Prerequisite: complete Syscalls & I/O + most other categories*
 > *The ultimate reward — you've built enough of a computer to make games*

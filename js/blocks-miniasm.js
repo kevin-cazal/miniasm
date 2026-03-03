@@ -259,6 +259,22 @@
     }
   };
 
+  Blockly.Blocks['miniasm_swp'] = {
+    init: function() {
+      this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
+          .appendField('SWP  r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'X')
+          .appendField(' r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'Y');
+      appendHelpLines(this, 'tooltipSwp');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip(T('tooltipSwp'));
+    }
+  };
+
   Blockly.Blocks['miniasm_mul'] = {
     init: function() {
       this.appendDummyInput()
@@ -325,6 +341,9 @@
   };
   generator['miniasm_sub'] = function(block) {
     return 'SUB r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
+  };
+  generator['miniasm_swp'] = function(block) {
+    return 'SWP r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
   };
   generator['miniasm_mul'] = function(block) {
     return 'MUL r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
@@ -440,6 +459,7 @@
     // Unlockable instructions
     if (op === 'ADD' && tokens.length >= 3) return { type: 'miniasm_add', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
     if (op === 'SUB' && tokens.length >= 3) return { type: 'miniasm_sub', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
+    if (op === 'SWP' && tokens.length >= 3) return { type: 'miniasm_swp', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
     if (op === 'MUL' && tokens.length >= 3) return { type: 'miniasm_mul', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
     if (op === 'POW' && tokens.length >= 3) return { type: 'miniasm_pow', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
     return null;
@@ -472,6 +492,7 @@
     STP: 'miniasm_stp',
     ADD: 'miniasm_add',
     SUB: 'miniasm_sub',
+    SWP: 'miniasm_swp',
     MUL: 'miniasm_mul',
     POW: 'miniasm_pow',
   };
@@ -480,6 +501,7 @@
   var CATEGORIES = [
     { nameKey: 'catData',       opcodes: ['SET'] },
     { nameKey: 'catArithmetic', opcodes: ['INC', 'DEC', 'ADD', 'SUB', 'MUL', 'POW'] },
+    { nameKey: 'catSwaps',      opcodes: ['SWP'] },
     { nameKey: 'catControl',    opcodes: ['ISZ', 'ISN', 'JMP', 'STP'] },
   ];
 

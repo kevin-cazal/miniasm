@@ -71,12 +71,14 @@
       tooltipStp: 'STP — Stop execution and halt the program.',
       tooltipAdd: 'ADD rX rY — rX = rX + rY  (rY is preserved)',
       tooltipSub: 'SUB rX rY — rX = rX − rY  (rY is preserved)',
+      tooltipSwp: 'SWP rX rY — swap the values in rX and rY',
       tooltipMul: 'MUL rX rY — rX = rX × rY  (rY is preserved)',
       tooltipPow: 'POW rX rY — rX = rX ^ rY  (rY is preserved)',
 
       // ─── Blockly category names ───────────────────────────────
       catData: 'Data',
       catArithmetic: 'Arithmetic',
+      catSwaps: 'Swaps',
       catControl: 'Control',
 
       // ─── Challenge/tutorial text (keyed by id) ─────────────────
@@ -578,6 +580,102 @@
             '; Inputs in r2 and r3. Store result in r0.\n' +
             ';\n' +
             '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        // ─── Swaps & Rearrangement — Tutorial (14) ─────────────────
+        14: {
+          name: 'Tutorial',
+          title: 'The Spare Drawer',
+          goal: 'Swap the values in r2 and r3 using a third register as temp',
+          description:
+            '; ─── Tutorial: The Spare Drawer ───\n' +
+            ';\n' +
+            '; You have two values in r2 and r3. Your job: swap them.\n' +
+            '; After your program halts, r2 must hold the old r3, and r3 the old r2.\n' +
+            ';\n' +
+            '; You don\'t have a SWAP instruction yet — use a "spare drawer":\n' +
+            '; copy one value into another register (e.g. r0), then move the second\n' +
+            '; into the first slot, then restore from the spare.\n' +
+            ';\n' +
+            '; Useful: SET r0 r2  (copy r2 into r0), then SET r2 r3, then SET r3 r0.',
+          hints: [
+            'Use r0 (or r1) as a temporary. First save r2 there, then overwrite r2 with r3, then write the saved value into r3.',
+          ],
+          starterCode:
+            '; ─── Tutorial: The Spare Drawer ───\n' +
+            '; Goal: swap r2 and r3 using a temp register\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        // ─── Swaps & Rearrangement — Challenges (15–18) ─────────────
+        15: {
+          name: 'SWAP',
+          title: 'Swap',
+          goal: 'Swap r2 and r3 (r2 gets old r3, r3 gets old r2)',
+          description:
+            'Same as the tutorial: swap the values in r2 and r3.\n' +
+            'Complete this challenge to unlock the SWP instruction!',
+          hints: [
+            'Use a temp register (r0 or r1): SET temp r2, SET r2 r3, SET r3 temp.',
+          ],
+          starterCode:
+            '; ─── Challenge: Swap ───\n' +
+            '; Goal: swap r2 and r3\n' +
+            ';\n' +
+            '\n' +
+            'STP\n',
+        },
+        16: {
+          name: 'ROTATE3',
+          title: 'Rotate three',
+          goal: 'Rotate r1→r2→r3→r1 (cyclic shift)',
+          description:
+            'After your program halts: r1 must hold the old r3, r2 the old r1, r3 the old r2.\n' +
+            'You now have SWP — use it to do the rotation with a couple of swaps.',
+          hints: [
+            'Two swaps can rotate three values: e.g. SWP r1 r2 then SWP r2 r3 (or SWP r1 r3 then SWP r2 r3). Try different orders.',
+          ],
+          starterCode:
+            '; ─── Challenge: Rotate three ───\n' +
+            '; Goal: r1←r3, r2←r1, r3←r2\n' +
+            ';\n' +
+            '\n' +
+            'STP\n',
+        },
+        17: {
+          name: 'SORT2',
+          title: 'Sort two',
+          goal: 'Put min(r2,r3) in r2 and max(r2,r3) in r3',
+          description:
+            'Sort the two values: when you halt, r2 must be ≤ r3.\n' +
+            'You have SUB and ISN for comparison; use a conditional swap.',
+          hints: [
+            'If r2 > r3, swap them. Compare with SUB then branch with ISN/JMP.',
+          ],
+          starterCode:
+            '; ─── Challenge: Sort two ───\n' +
+            '; Goal: r2 = min, r3 = max\n' +
+            ';\n' +
+            '\n' +
+            'STP\n',
+        },
+        18: {
+          name: 'SORT3',
+          title: 'Sort three',
+          goal: 'Sort r1 ≤ r2 ≤ r3 (ascending order)',
+          description:
+            'When you halt, r1 must be the smallest, r2 the middle, r3 the largest.\n' +
+            'Use comparisons (SUB, ISN) and swaps (SWP). Sort two pairs, then check again.',
+          hints: [
+            'Sort r1 and r2, then r2 and r3, then r1 and r2 again (like a tiny bubble sort).',
+          ],
+          starterCode:
+            '; ─── Challenge: Sort three ───\n' +
+            '; Goal: r1 ≤ r2 ≤ r3\n' +
+            ';\n' +
             '\n' +
             'STP\n',
         },

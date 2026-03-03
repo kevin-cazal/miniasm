@@ -38,6 +38,7 @@ describe('MiniASM VM', () => {
       expect(INST).toHaveProperty('ISN');
       expect(INST).toHaveProperty('ADD');
       expect(INST).toHaveProperty('SUB');
+      expect(INST).toHaveProperty('SWP');
       expect(INST).toHaveProperty('MUL');
       expect(INST).toHaveProperty('POW');
       expect(INST).toHaveProperty('STP');
@@ -83,6 +84,12 @@ describe('MiniASM VM', () => {
       expect(instr.opcode).toBe('SUB');
       expect(instr.operands[0].value).toBe(0);
       expect(instr.operands[1].value).toBe(1);
+    });
+    it('parses SWP rX rY', () => {
+      const instr = parseInstruction('SWP r2 r3');
+      expect(instr.opcode).toBe('SWP');
+      expect(instr.operands[0].value).toBe(2);
+      expect(instr.operands[1].value).toBe(3);
     });
     it('parses MUL and POW', () => {
       expect(parseInstruction('MUL r2 r3').opcode).toBe('MUL');
@@ -298,6 +305,15 @@ describe('MiniASM VM', () => {
       loadProgram(m, 'SUB r0 r1\nSTP');
       execute(m);
       expect(m.registers[0]).toBe(-2);
+    });
+    it('SWP swaps two registers', () => {
+      const m = createMachine();
+      m.registers[2] = 10;
+      m.registers[3] = 20;
+      loadProgram(m, 'SWP r2 r3\nSTP');
+      execute(m);
+      expect(m.registers[2]).toBe(20);
+      expect(m.registers[3]).toBe(10);
     });
     it('ADD adds second register into first', () => {
       const m = createMachine();

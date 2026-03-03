@@ -32,6 +32,7 @@
   var CATEGORIES = [
     { id: 'arithmetic', name: 'Arithmetic' },
     { id: 'comparisons', name: 'Comparisons & Logic' },
+    { id: 'swaps', name: 'Swaps & Rearrangement' },
   ];
 
   // ─── Exercise data (structural / non-translatable) ─────────────────
@@ -255,6 +256,75 @@
         { inputs: { r2: 4,  r3: 4  }, expected: { r0: 4  } },
         { inputs: { r2: 0,  r3: 10 }, expected: { r0: 10 } },
         { inputs: { r2: -2, r3: 3  }, expected: { r0: 3  } },
+      ],
+    },
+
+    // ─── Swaps & Rearrangement — Tutorial (14) ───────────────────────
+    {
+      id: 14,
+      category: 'swaps',
+      type: 'tutorial',
+      requires: [13],
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 10, r3: 20 }, expected: { r2: 20, r3: 10 } },
+        { inputs: { r2: 7,  r3: 3  }, expected: { r2: 3,  r3: 7  } },
+        { inputs: { r2: 0,  r3: 99 }, expected: { r2: 99, r3: 0  } },
+      ],
+    },
+    // ─── Swaps & Rearrangement — Challenges (15–18) ──────────────────
+    {
+      id: 15,
+      category: 'swaps',
+      type: 'challenge',
+      requires: [14],
+      available: PRIMITIVES,
+      unlocks: 'SWP',
+      tests: [
+        { inputs: { r2: 10, r3: 20 }, expected: { r2: 20, r3: 10 } },
+        { inputs: { r2: 1,  r3: 2  }, expected: { r2: 2,  r3: 1  } },
+        { inputs: { r2: 0,  r3: 0  }, expected: { r2: 0,  r3: 0  } },
+      ],
+    },
+    {
+      id: 16,
+      category: 'swaps',
+      type: 'challenge',
+      requires: [15],
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r1: 1, r2: 2, r3: 3 }, expected: { r1: 3, r2: 1, r3: 2 } },
+        { inputs: { r1: 5, r2: 6, r3: 7 }, expected: { r1: 7, r2: 5, r3: 6 } },
+        { inputs: { r1: 0, r2: 0, r3: 0 }, expected: { r1: 0, r2: 0, r3: 0 } },
+      ],
+    },
+    {
+      id: 17,
+      category: 'swaps',
+      type: 'challenge',
+      requires: [16],
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r2: 5,  r3: 3  }, expected: { r2: 3,  r3: 5  } },
+        { inputs: { r2: 3,  r3: 5  }, expected: { r2: 3,  r3: 5  } },
+        { inputs: { r2: 4,  r3: 4  }, expected: { r2: 4,  r3: 4  } },
+        { inputs: { r2: -2, r3: 3  }, expected: { r2: -2, r3: 3  } },
+      ],
+    },
+    {
+      id: 18,
+      category: 'swaps',
+      type: 'challenge',
+      requires: [17],
+      available: PRIMITIVES,
+      unlocks: null,
+      tests: [
+        { inputs: { r1: 3, r2: 1, r3: 2 }, expected: { r1: 1, r2: 2, r3: 3 } },
+        { inputs: { r1: 1, r2: 2, r3: 3 }, expected: { r1: 1, r2: 2, r3: 3 } },
+        { inputs: { r1: 5, r2: 3, r3: 4 }, expected: { r1: 3, r2: 4, r3: 5 } },
       ],
     },
   ];
