@@ -226,6 +226,20 @@
     }
   };
 
+  // ----- Comment block -----
+  Blockly.Blocks['miniasm_comment'] = {
+    init: function() {
+      this.appendDummyInput()
+          .appendField('; ')
+          .appendField(new Blockly.FieldTextInput('comment'), 'TEXT');
+      appendHelpLines(this, 'tooltipComment');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(60);
+      this.setTooltip(T('tooltipComment'));
+    }
+  };
+
   // ----- Unlockable instruction blocks -----
   Blockly.Blocks['miniasm_add'] = {
     init: function() {
@@ -351,6 +365,9 @@
   generator['miniasm_pow'] = function(block) {
     return 'POW r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
   };
+  generator['miniasm_comment'] = function(block) {
+    return '; ' + (block.getFieldValue('TEXT') || '');
+  };
 
   // ----- blocksToCode -----
   function blocksToCode(workspace) {
@@ -369,17 +386,27 @@
     } else {
       block = null;
     }
+    function emitBlock(b) {
+      var fn = generator[b.type];
+      if (!fn) return null;
+      var line = fn(b);
+      // Append Blockly native comment as inline comment (skip for comment blocks)
+      if (b.type !== 'miniasm_comment') {
+        var ic = (typeof b.getCommentText === 'function') ? b.getCommentText() : null;
+        if (ic) line += ' ; ' + ic;
+      }
+      return line;
+    }
     if (block) {
       while (block) {
-        var fn = generator[block.type];
-        if (fn) lines.push(fn(block));
+        var line = emitBlock(block);
+        if (line !== null) lines.push(line);
         block = block.getNextBlock ? block.getNextBlock() : null;
       }
     } else {
       for (var j = 0; j < topBlocks.length; j++) {
-        block = topBlocks[j];
-        var fn = generator[block.type];
-        if (fn) lines.push(fn(block));
+        var line = emitBlock(topBlocks[j]);
+        if (line !== null) lines.push(line);
       }
     }
     return lines.join('\n');
@@ -392,9 +419,23 @@
     var blockInfos = [];
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i];
-      if (line.startsWith(';')) continue;
+      // Full-line comment → comment block
+      if (line.startsWith(';')) {
+        blockInfos.push({ type: 'miniasm_comment', TEXT: line.slice(1).trim() });
+        continue;
+      }
+      // Check for inline comment
+      var semiIdx = line.indexOf(';');
+      var inlineComment = null;
+      if (semiIdx !== -1) {
+        inlineComment = line.slice(semiIdx + 1).trim();
+        line = line.slice(0, semiIdx).trim();
+      }
       var blockInfo = parseLineToBlock(line);
-      if (blockInfo) blockInfos.push(blockInfo);
+      if (blockInfo) {
+        if (inlineComment) blockInfo._comment = inlineComment;
+        blockInfos.push(blockInfo);
+      }
     }
     var blockXml = document.createElement('xml');
     var startEl = document.createElement('block');
@@ -471,11 +512,18 @@
     block.setAttribute('x', x);
     block.setAttribute('y', y);
     for (var key in info) {
-      if (key === 'type') continue;
+      if (key === 'type' || key === '_comment') continue;
       var field = document.createElement('field');
       field.setAttribute('name', key);
       field.textContent = String(info[key]);
       block.appendChild(field);
+    }
+    // Inline comment → Blockly native comment bubble
+    if (info._comment) {
+      var commentEl = document.createElement('comment');
+      commentEl.setAttribute('pinned', 'true');
+      commentEl.textContent = info._comment;
+      block.appendChild(commentEl);
     }
     return block;
   }
@@ -528,6 +576,10 @@
         xml += '</category>';
       }
     }
+    // Comment block is always available (not gated by opcodes)
+    xml += '<category name="' + T('catComments') + '">';
+    xml += '<block type="miniasm_comment"></block>';
+    xml += '</category>';
     xml += '</xml>';
     return xml;
   }
@@ -576,6 +628,10 @@
   }
 
   // ----- PC indicator & line numbers -----
+  function isExecutableBlock(block) {
+    return block.type !== 'miniasm_start' && block.type !== 'miniasm_comment' && generator[block.type];
+  }
+
   function getBlockAtLineIndex(workspace, index) {
     if (!workspace || index < 0) return null;
     var topBlocks = workspace.getTopBlocks(true);
@@ -589,7 +645,7 @@
     var block = startBlock && startBlock.getNextBlock ? startBlock.getNextBlock() : null;
     var n = 0;
     while (block) {
-      if (block.type !== 'miniasm_start' && generator[block.type]) {
+      if (isExecutableBlock(block)) {
         if (n === index) return block;
         n++;
       }
@@ -619,7 +675,7 @@
     var block = startBlock && startBlock.getNextBlock ? startBlock.getNextBlock() : null;
     var lineNum = 1;
     while (block) {
-      if (block.type !== 'miniasm_start' && generator[block.type]) {
+      if (isExecutableBlock(block)) {
         var field = block.getField('LINE_NUM');
         if (field && typeof field.setValue === 'function') {
           field.setValue('[' + lineNum + ']');
