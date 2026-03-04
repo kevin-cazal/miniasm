@@ -4,7 +4,7 @@
 > turning challenges into "keys" that open new possibilities. The learner should
 > feel like they're building their own computer, one instruction at a time.
 
-**Implemented so far:** Arithmetic (tutorials 0–3, challenges ADD/MUL/POW), **Comparisons & Logic** (tutorials 7–8, challenges SUB/ABS/SGN/MIN/MAX/CMP/JEQ/JLT/JGE/JGT/JLE), **Swaps & Rearrangement** (tutorial 20, challenges SWAP/ROTATE3/SORT2/SORT3). All other categories and the SYS/syscalls idea below are not yet implemented.
+**Implemented so far:** Arithmetic (tutorials 0–3, challenges ADD/MUL/POW), **Comparisons & Logic** (tutorials 7–8, challenges SUB/ABS/SGN/MIN/MAX), **Conditional Jumps** (challenges CMP/JEQ/JLT/JGE/JGT/JLE), **Swaps & Rearrangement** (tutorial 20, challenges SWAP/ROTATE3/SORT2/SORT3). All other categories and the SYS/syscalls idea below are not yet implemented.
 
 ---
 
@@ -14,7 +14,8 @@
 |--------|-------------|
 | **Primitives** (always available) | `SET`, `INC`, `DEC`, `ISZ`, `ISN`, `STP`, `JMP` |
 | **Unlocked via Arithmetic** | `ADD`, `MUL`, `POW` |
-| **Unlocked via Comparisons** | `SUB`, `CMP`, `JEQ`, `JLT`, `JGE`, `JGT`, `JLE` |
+| **Unlocked via Comparisons** | `SUB` |
+| **Unlocked via Conditional Jumps** | `CMP`, `JEQ`, `JLT`, `JGE`, `JGT`, `JLE` |
 | **Unlocked via Swaps** | `SWP` |
 | **Proposed new** | `LDR`, `STR`, `DIV`, `MOD`, `SHL`, `SHR` |
 
@@ -23,7 +24,7 @@
 ## 📐 Category: Comparisons & Logic — **✅ Implemented**
 
 > *Prerequisite: complete Arithmetic*
-> *Key unlocks: SUB, CMP, JEQ, JLT, JGE, JGT, JLE*
+> *Key unlock: SUB*
 
 ### Tutorials
 - **"Going Down"** — Subtract a fixed amount using DEC; introduces negative registers — ✅
@@ -37,22 +38,40 @@
 | 3 | **SGN** | `r0 = sign(r2)` → −1, 0, or +1 | — | ✅ |
 | 4 | **MIN** | `r0 = min(r2, r3)` | — | ✅ |
 | 5 | **MAX** | `r0 = max(r2, r3)` | — | ✅ |
-| 6 | **CMP** | `r0 = sgn(r2 − r3)` (compare two values) | `CMP rX rY` | ✅ |
-| 7 | **JEQ** | `r0 = 1` if `r2 == r3`, else `0` | `JEQ rX iN` | ✅ |
-| 8 | **JLT** | `r0 = 1` if `r2 < r3`, else `0` | `JLT rX iN` | ✅ |
-| 9 | **JGE** | `r0 = 1` if `r2 >= r3`, else `0` | `JGE rX iN` | ✅ |
-| 10 | **JGT** | `r0 = 1` if `r2 > r3`, else `0` | `JGT rX iN` | ✅ |
-| 11 | **JLE** | `r0 = 1` if `r2 <= r3`, else `0` | `JLE rX iN` | ✅ |
+
+---
+
+## 🎯 Category: Conditional Jumps — **✅ Implemented**
+
+> *Prerequisite: complete Comparisons & Logic (needs SUB)*
+> *Key unlocks: CMP, JEQ, JLT, JGE, JGT, JLE*
+>
+> `CMP rX rY` — Compare: `rX = sgn(rX − rY)` → 1, 0, or −1 (rY preserved)
+> `JEQ rX iN` — Jump to line N if `rX == 0`
+> `JLT rX iN` — Jump to line N if `rX < 0`
+> `JGT rX iN` — Jump to line N if `rX > 0`
+> `JGE rX iN` — Jump to line N if `rX >= 0`
+> `JLE rX iN` — Jump to line N if `rX <= 0`
+
+### Challenges
+| # | Name | Goal | Unlocks | Done |
+|---|------|------|---------|------|
+| 1 | **CMP** | `r0 = sgn(r2 − r3)` (compare two values) | `CMP rX rY` | ✅ |
+| 2 | **JEQ** | `r0 = 1` if `r2 == r3`, else `0` | `JEQ rX iN` | ✅ |
+| 3 | **JLT** | `r0 = 1` if `r2 < r3`, else `0` | `JLT rX iN` | ✅ |
+| 4 | **JGE** | `r0 = 1` if `r2 >= r3`, else `0` | `JGE rX iN` | ✅ |
+| 5 | **JGT** | `r0 = 1` if `r2 > r3`, else `0` | `JGT rX iN` | ✅ |
+| 6 | **JLE** | `r0 = 1` if `r2 <= r3`, else `0` | `JLE rX iN` | ✅ |
 
 > *CMP is SUB + SGN in one instruction. The conditional jumps (JEQ, JLT, etc.) combine
 > CMP with ISZ/ISN into single instructions — the student earns each pattern before
-> getting the shortcut.*
+> getting the shortcut. These 6 unlocks massively simplify the sorting exercises that follow.*
 
 ---
 
 ## 🔀 Category: Swaps & Rearrangement — **✅ Implemented**
 
-> *Prerequisite: complete Comparisons & Logic (including conditional jumps)*
+> *Prerequisite: complete Conditional Jumps*
 > *Key unlock: SWP — a simple but powerful utility instruction*
 
 ### Tutorials
@@ -247,11 +266,14 @@
 Arithmetic (existing)
     │
     ├─── Comparisons & Logic  ──→  Division & Remainders  ──→  Number Theory
-    │     unlocks SUB, CMP,          unlocks DIV, MOD
-    │     JEQ, JLT, JGE, JGT, JLE
-    │         │
-    │         └─── Swaps & Rearrangement  ──┐
-    │                   unlocks SWP          │
+    │         unlocks SUB              unlocks DIV, MOD
+    │              │
+    │              └─── Conditional Jumps  ──┐
+    │                     unlocks CMP, JEQ,  │
+    │                     JLT, JGE, JGT, JLE │
+    │                          │              │
+    │                          └─── Swaps & Rearrangement  ──┐
+    │                                    unlocks SWP          │
     │                                        ├──→  Sorting (capstone)
     ├─── Memory & Pointers  ────────────────┤
     │         unlocks LDR, STR               │
@@ -275,7 +297,9 @@ Primitives:  SET  INC  DEC  ISZ  ISN  STP  JMP
                 │
 Arithmetic:     ├──→  ADD  ──→  MUL  ──→  POW
                 │
-Comparisons:    ├──→  SUB  ──→  CMP  ──→  JEQ  ──→  JLT  ──→  JGE  ──→  JGT  ──→  JLE
+Comparisons:    ├──→  SUB
+                │
+Cond. Jumps:    ├──→  CMP  ──→  JEQ  ──→  JLT  ──→  JGE  ──→  JGT  ──→  JLE
                 │
 Swaps:          ├──→  SWP
                 │
