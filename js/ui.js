@@ -25,6 +25,7 @@
   var autoRunInterval = null;        // setInterval id for auto-stepping
   var isAutoRunning = false;         // whether auto-run is active
   var resetOnChange = true;          // reset program when user edits registers/memory
+  var cheatsEnabled = !!CFG.enableCheats;
 
   // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -497,6 +498,97 @@
     updateNavButtons();
   }
 
+  // ─── Cheat mode: fast-forward progress to an exercise ────────────────
+
+  function fastForwardProgressTo(exerciseId) {
+    if (!cheatsEnabled) return;
+    var progress = window.MiniASMExercises.loadProgress();
+    var exercises = window.MiniASMExercises.EXERCISES;
+    var completed = [];
+
+    for (var i = 0; i < exercises.length; i++) {
+      var ex = exercises[i];
+      if (typeof exerciseId === 'number' && ex.id < exerciseId) {
+        completed.push(ex.id);
+      }
+    }
+
+    progress.completed = completed;
+    window.MiniASMExercises.saveProgress(progress);
+    updateNavButtons();
+
+    if (typeof exerciseId === 'number') {
+      switchMode(exerciseId);
+    }
+  }
+
+  function buildCheatOverlayList() {
+    if (!cheatsEnabled) return;
+    var listEl = document.getElementById('cheat-exercise-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = '';
+    var exercises = window.MiniASMExercises.EXERCISES;
+    var categories = window.MiniASMExercises.CATEGORIES;
+    var catById = {};
+
+    for (var c = 0; c < categories.length; c++) {
+      catById[categories[c].id] = categories[c];
+    }
+
+    for (var i = 0; i < exercises.length; i++) {
+      var ex = exercises[i];
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cheat-ex-item';
+      btn.setAttribute('data-ex-id', String(ex.id));
+
+      var main = document.createElement('div');
+      main.className = 'cheat-ex-item-main';
+
+      var title = document.createElement('div');
+      title.className = 'cheat-ex-item-title';
+      var label = ex.type === 'tutorial' ? ex.title : ex.name;
+      title.textContent = '[' + ex.id + '] ' + label;
+
+      var meta = document.createElement('div');
+      meta.className = 'cheat-ex-item-meta';
+      var cat = catById[ex.category];
+      var catName = cat ? cat.name : ex.category;
+      meta.textContent = catName + ' • ' + ex.type;
+
+      main.appendChild(title);
+      main.appendChild(meta);
+
+      btn.appendChild(main);
+
+      (function (id) {
+        btn.addEventListener('click', function () {
+          fastForwardProgressTo(id);
+          closeCheatOverlay();
+        });
+      })(ex.id);
+
+      listEl.appendChild(btn);
+    }
+  }
+
+  function openCheatOverlay() {
+    if (!cheatsEnabled) return;
+    var overlay = document.getElementById('cheat-overlay');
+    if (!overlay) return;
+    buildCheatOverlayList();
+    overlay.classList.add('visible');
+    overlay.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeCheatOverlay() {
+    var overlay = document.getElementById('cheat-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('visible');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
   function createNavItem(ex) {
     var btn = document.createElement('button');
     btn.className = 'nav-item';
@@ -817,6 +909,30 @@
   document.getElementById('btn-mode-code').addEventListener('click', function () { setEditorMode('code'); });
   document.getElementById('btn-mode-blocks').addEventListener('click', function () { setEditorMode('blocks'); });
   document.getElementById('mode-nav').addEventListener('click', handleNavClick);
+
+  // Cheat overlay: button + close (only when enableCheats is true)
+  (function () {
+    var overlay = document.getElementById('cheat-overlay');
+    var closeBtn = document.getElementById('cheat-close-btn');
+    var cheatBtn = document.getElementById('btn-cheat-progress');
+
+    if (cheatBtn) {
+      cheatBtn.style.display = cheatsEnabled ? '' : 'none';
+      cheatBtn.addEventListener('click', function () {
+        if (cheatsEnabled) openCheatOverlay();
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeCheatOverlay);
+    }
+
+    if (overlay) {
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeCheatOverlay();
+      });
+    }
+  })();
 
   // Reset-on-change toggle: restore from localStorage and wire up
   (function () {

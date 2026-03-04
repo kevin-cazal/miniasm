@@ -48,6 +48,11 @@
       '@': 'MemoryAddress',
       'i': 'InstructionNumber',
     },
+
+    // ─── Feature flags ─────────────────────────────────────────
+    // Enable internal-only tools such as the exercise "cheat mode".
+    // This should remain false in production builds.
+    enableCheats: true,
   };
 
   // ─── Derived helpers (computed from the settings above) ──────

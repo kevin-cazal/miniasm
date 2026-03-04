@@ -97,6 +97,21 @@
     .nav-dropdown.open .nav-dropdown-menu {
       display: block;
     }
+    .nav-cheat-btn {
+      margin-left: auto;
+      font-family: inherit;
+      font-size: 11px;
+      padding: 6px 10px;
+      border: 1px solid #45475a;
+      border-radius: 4px;
+      background: #313244;
+      color: #6c7086;
+      cursor: pointer;
+    }
+    .nav-cheat-btn:hover {
+      color: #f9e2af;
+      border-color: #6c7086;
+    }
     .nav-cat-header {
       padding: 8px 14px 4px;
       font-size: 11px;
@@ -570,6 +585,110 @@
     }
     .status.halted { color: #f38ba8; }
     .status.running { color: #a6e3a1; }
+
+    /* ─── Cheat overlay (internal tool) ─────────────────────── */
+    .cheat-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .cheat-overlay.visible {
+      display: flex;
+    }
+    .cheat-dialog {
+      background: #1e1e2e;
+      border-radius: 10px;
+      border: 1px solid #45475a;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
+      max-width: 520px;
+      width: 90%;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .cheat-dialog-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid #313244;
+      background: #181825;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .cheat-dialog-header h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #f9e2af;
+    }
+    .cheat-dialog-header span {
+      font-size: 11px;
+      color: #6c7086;
+    }
+    .cheat-dialog-body {
+      padding: 8px 12px 10px;
+      overflow-y: auto;
+    }
+    .cheat-ex-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .cheat-ex-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #313244;
+      background: #181825;
+      color: #cdd6f4;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .cheat-ex-item:hover {
+      background: #313244;
+    }
+    .cheat-ex-item-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .cheat-ex-item-title {
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .cheat-ex-item-meta {
+      font-size: 11px;
+      color: #6c7086;
+    }
+    .cheat-dialog-footer {
+      padding: 8px 12px;
+      border-top: 1px solid #313244;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: #181825;
+    }
+    .cheat-dialog-footer button {
+      font-family: inherit;
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #45475a;
+      color: #cdd6f4;
+    }
+    .cheat-dialog-footer button:hover {
+      background: #585b70;
+    }
   </style>
 </head>
 <body>
@@ -584,6 +703,7 @@
         <!-- Category items generated dynamically by ui.js -->
       </div>
     </div>
+    <button type="button" id="btn-cheat-progress" class="nav-cheat-btn" style="display: none;" title="Jump to any exercise (dev only)">(DEBUG) Jump to exercise</button>
   </nav>
 
   <div id="root">
@@ -662,6 +782,22 @@
             <tbody></tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Cheat overlay (Ctrl+Shift+E, when enabled) ───────────── -->
+  <div id="cheat-overlay" class="cheat-overlay" aria-hidden="true">
+    <div class="cheat-dialog" role="dialog" aria-modal="true" aria-labelledby="cheat-dialog-title">
+      <div class="cheat-dialog-header">
+        <h3 id="cheat-dialog-title">Cheat: jump to exercise</h3>
+        <span>(Debug tool)</span>
+      </div>
+      <div class="cheat-dialog-body">
+        <div id="cheat-exercise-list" class="cheat-ex-list"></div>
+      </div>
+      <div class="cheat-dialog-footer">
+        <button type="button" id="cheat-close-btn">Close</button>
       </div>
     </div>
   </div>
