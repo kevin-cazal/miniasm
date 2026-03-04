@@ -57,8 +57,8 @@ describe('MiniASM Exercise System', () => {
         expect(cat).toHaveProperty('name');
       });
     });
-    it('EXERCISES has at least 14 entries (6 tutorials + 8 challenges)', () => {
-      expect(EXERCISES.length).toBeGreaterThanOrEqual(14);
+    it('EXERCISES has at least 20 entries (6 tutorials + 14 challenges)', () => {
+      expect(EXERCISES.length).toBeGreaterThanOrEqual(20);
     });
     it('each exercise has id, category, type, requires, available, tests, unlocks', () => {
       const CATEGORIES = getExercisesAPI().CATEGORIES;
@@ -213,6 +213,24 @@ describe('MiniASM Exercise System', () => {
       expect(u).toContain('MUL');
       expect(u).toContain('POW');
       expect(u).toContain('SUB');
+    });
+    it('returns CMP after exercise 14', () => {
+      markCompleted(14);
+      expect(getUnlockedInstructions()).toContain('CMP');
+    });
+    it('returns all conditional jumps after exercises 14-19', () => {
+      for (var i = 14; i <= 19; i++) markCompleted(i);
+      const u = getUnlockedInstructions();
+      expect(u).toContain('CMP');
+      expect(u).toContain('JEQ');
+      expect(u).toContain('JLT');
+      expect(u).toContain('JGE');
+      expect(u).toContain('JGT');
+      expect(u).toContain('JLE');
+    });
+    it('returns SWP after exercise 21 (renumbered)', () => {
+      markCompleted(21);
+      expect(getUnlockedInstructions()).toContain('SWP');
     });
   });
 
@@ -609,6 +627,193 @@ describe('MiniASM Exercise System', () => {
     });
     it('fails when always returning r2', () => {
       const result = runAllTests(ex, 'SET r0 r2\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  // ─── CMP & Conditional Jump challenges ──────────────────────────
+
+  describe('runAllTests (challenge 14: CMP)', () => {
+    let ex;
+    beforeEach(() => {
+      ex = getExercisesAPI().EXERCISES.find((e) => e.id === 14);
+      markCompleted(9); // unlock SUB
+    });
+
+    const passingSource = [
+      'SET r0 r2',     // 1
+      'SUB r0 r3',     // 2: r0 = r2 - r3
+      'ISZ r0',        // 3: if zero, skip
+      'JMP i6',        // 4: not zero → line 6
+      'STP',           // 5: r0 already 0, done
+      'ISN r0',        // 6: if negative, skip
+      'JMP i11',       // 7: positive → line 11
+      'SET r0 #0',     // 8
+      'DEC r0',        // 9: r0 = -1
+      'STP',           // 10
+      'SET r0 #1',     // 11
+      'STP',           // 12
+    ].join('\n');
+
+    it('passes with correct solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when always returning 0', () => {
+      const result = runAllTests(ex, 'SET r0 #0\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  describe('runAllTests (challenge 15: JEQ)', () => {
+    let ex;
+    beforeEach(() => {
+      ex = getExercisesAPI().EXERCISES.find((e) => e.id === 15);
+      markCompleted(9);  // unlock SUB
+      markCompleted(14); // unlock CMP
+    });
+
+    const passingSource = [
+      'SET r0 r2',     // 1
+      'CMP r0 r3',    // 2: r0 = sgn(r2-r3)
+      'ISZ r0',        // 3: if equal (r0==0), skip
+      'JMP i7',        // 4: not equal → line 7
+      'SET r0 #1',     // 5: equal → 1
+      'STP',           // 6
+      'SET r0 #0',     // 7: not equal → 0
+      'STP',           // 8
+    ].join('\n');
+
+    it('passes with correct solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when always returning 1', () => {
+      const result = runAllTests(ex, 'SET r0 #1\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  describe('runAllTests (challenge 16: JLT)', () => {
+    let ex;
+    beforeEach(() => {
+      ex = getExercisesAPI().EXERCISES.find((e) => e.id === 16);
+      markCompleted(9);  // unlock SUB
+      markCompleted(14); // unlock CMP
+    });
+
+    const passingSource = [
+      'SET r0 r2',     // 1
+      'CMP r0 r3',    // 2: r0 = sgn(r2-r3)
+      'ISN r0',        // 3: if less (r0<0), skip
+      'JMP i7',        // 4: not less → line 7
+      'SET r0 #1',     // 5: less → 1
+      'STP',           // 6
+      'SET r0 #0',     // 7: not less → 0
+      'STP',           // 8
+    ].join('\n');
+
+    it('passes with correct solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when always returning 0', () => {
+      const result = runAllTests(ex, 'SET r0 #0\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  describe('runAllTests (challenge 17: JGE)', () => {
+    let ex;
+    beforeEach(() => {
+      ex = getExercisesAPI().EXERCISES.find((e) => e.id === 17);
+      markCompleted(9);  // unlock SUB
+      markCompleted(14); // unlock CMP
+    });
+
+    const passingSource = [
+      'SET r0 r2',     // 1
+      'CMP r0 r3',    // 2: r0 = sgn(r2-r3)
+      'ISN r0',        // 3: if negative (less), skip
+      'JMP i7',        // 4: NOT negative → GE → line 7
+      'SET r0 #0',     // 5: less → 0
+      'STP',           // 6
+      'SET r0 #1',     // 7: GE → 1
+      'STP',           // 8
+    ].join('\n');
+
+    it('passes with correct solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when always returning 1', () => {
+      const result = runAllTests(ex, 'SET r0 #1\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  describe('runAllTests (challenge 18: JGT)', () => {
+    let ex;
+    beforeEach(() => {
+      ex = getExercisesAPI().EXERCISES.find((e) => e.id === 18);
+      markCompleted(9);  // unlock SUB
+      markCompleted(14); // unlock CMP
+    });
+
+    const passingSource = [
+      'SET r0 r2',     // 1
+      'CMP r0 r3',    // 2: r0 = sgn(r2-r3)
+      'ISZ r0',        // 3: if zero (equal), skip
+      'JMP i7',        // 4: not zero → check sign at line 7
+      'SET r0 #0',     // 5: equal → 0
+      'STP',           // 6
+      'ISN r0',        // 7: if negative, skip
+      'JMP i11',       // 8: positive → GT → line 11
+      'SET r0 #0',     // 9: negative → 0
+      'STP',           // 10
+      'SET r0 #1',     // 11: GT → 1
+      'STP',           // 12
+    ].join('\n');
+
+    it('passes with correct solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when always returning 1', () => {
+      const result = runAllTests(ex, 'SET r0 #1\nSTP');
+      expect(result.allPassed).toBe(false);
+    });
+  });
+
+  describe('runAllTests (challenge 19: JLE)', () => {
+    let ex;
+    beforeEach(() => {
+      ex = getExercisesAPI().EXERCISES.find((e) => e.id === 19);
+      markCompleted(9);  // unlock SUB
+      markCompleted(14); // unlock CMP
+    });
+
+    const passingSource = [
+      'SET r0 r2',     // 1
+      'CMP r0 r3',    // 2: r0 = sgn(r2-r3)
+      'ISZ r0',        // 3: if zero (equal), skip
+      'JMP i7',        // 4: not zero → check sign at line 7
+      'SET r0 #1',     // 5: equal → 1 (≤)
+      'STP',           // 6
+      'ISN r0',        // 7: if negative, skip
+      'JMP i11',       // 8: positive → not ≤ → line 11
+      'SET r0 #1',     // 9: negative → 1 (≤)
+      'STP',           // 10
+      'SET r0 #0',     // 11: positive → 0 (not ≤)
+      'STP',           // 12
+    ].join('\n');
+
+    it('passes with correct solution', () => {
+      const result = runAllTests(ex, passingSource);
+      expect(result.allPassed).toBe(true);
+    });
+    it('fails when always returning 1', () => {
+      const result = runAllTests(ex, 'SET r0 #1\nSTP');
       expect(result.allPassed).toBe(false);
     });
   });

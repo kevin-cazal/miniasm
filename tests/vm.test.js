@@ -41,8 +41,14 @@ describe('MiniASM VM', () => {
       expect(INST).toHaveProperty('SWP');
       expect(INST).toHaveProperty('MUL');
       expect(INST).toHaveProperty('POW');
+      expect(INST).toHaveProperty('CMP');
       expect(INST).toHaveProperty('STP');
       expect(INST).toHaveProperty('JMP');
+      expect(INST).toHaveProperty('JEQ');
+      expect(INST).toHaveProperty('JLT');
+      expect(INST).toHaveProperty('JGT');
+      expect(INST).toHaveProperty('JGE');
+      expect(INST).toHaveProperty('JLE');
     });
   });
 
@@ -94,6 +100,20 @@ describe('MiniASM VM', () => {
     it('parses MUL and POW', () => {
       expect(parseInstruction('MUL r2 r3').opcode).toBe('MUL');
       expect(parseInstruction('POW r0 r1').opcode).toBe('POW');
+    });
+    it('parses CMP rX rY', () => {
+      const instr = parseInstruction('CMP r0 r1');
+      expect(instr.opcode).toBe('CMP');
+      expect(instr.operands[0].value).toBe(0);
+      expect(instr.operands[1].value).toBe(1);
+    });
+    it('parses conditional jumps (JEQ, JLT, JGT, JGE, JLE)', () => {
+      ['JEQ', 'JLT', 'JGT', 'JGE', 'JLE'].forEach(op => {
+        const instr = parseInstruction(op + ' r2 i5');
+        expect(instr.opcode).toBe(op);
+        expect(instr.operands[0]).toEqual({ type: 'Register', value: 2 });
+        expect(instr.operands[1]).toEqual({ type: 'InstructionNumber', value: 5 });
+      });
     });
     it('parses JMP iN (instruction number)', () => {
       const instr = parseInstruction('JMP i1');
@@ -339,6 +359,112 @@ describe('MiniASM VM', () => {
       loadProgram(m, 'POW r0 r1\nSTP');
       execute(m);
       expect(m.registers[0]).toBe(8);
+    });
+    it('CMP sets register to sgn(rX - rY)', () => {
+      const m = createMachine();
+      m.registers[0] = 5; m.registers[1] = 3;
+      loadProgram(m, 'CMP r0 r1\nSTP');
+      execute(m);
+      expect(m.registers[0]).toBe(1);
+      expect(m.registers[1]).toBe(3);
+    });
+    it('CMP sets -1 when rX < rY', () => {
+      const m = createMachine();
+      m.registers[0] = 2; m.registers[1] = 7;
+      loadProgram(m, 'CMP r0 r1\nSTP');
+      execute(m);
+      expect(m.registers[0]).toBe(-1);
+    });
+    it('CMP sets 0 when rX == rY', () => {
+      const m = createMachine();
+      m.registers[0] = 4; m.registers[1] = 4;
+      loadProgram(m, 'CMP r0 r1\nSTP');
+      execute(m);
+      expect(m.registers[0]).toBe(0);
+    });
+    it('JEQ jumps when register is zero', () => {
+      const m = createMachine();
+      m.registers[0] = 0;
+      loadProgram(m, 'JEQ r0 i3\nINC r1\nSTP\nDEC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(2); // jumped to line 3 = index 2
+    });
+    it('JEQ does not jump when register is non-zero', () => {
+      const m = createMachine();
+      m.registers[0] = 5;
+      loadProgram(m, 'JEQ r0 i3\nINC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(1); // fell through
+    });
+    it('JLT jumps when register is negative', () => {
+      const m = createMachine();
+      m.registers[0] = -1;
+      loadProgram(m, 'JLT r0 i3\nINC r1\nSTP\nDEC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(2);
+    });
+    it('JLT does not jump when register is non-negative', () => {
+      const m = createMachine();
+      m.registers[0] = 0;
+      loadProgram(m, 'JLT r0 i3\nINC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(1);
+    });
+    it('JGT jumps when register is positive', () => {
+      const m = createMachine();
+      m.registers[0] = 1;
+      loadProgram(m, 'JGT r0 i3\nINC r1\nSTP\nDEC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(2);
+    });
+    it('JGT does not jump when register is zero or negative', () => {
+      const m = createMachine();
+      m.registers[0] = 0;
+      loadProgram(m, 'JGT r0 i3\nINC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(1);
+    });
+    it('JGE jumps when register is zero', () => {
+      const m = createMachine();
+      m.registers[0] = 0;
+      loadProgram(m, 'JGE r0 i3\nINC r1\nSTP\nDEC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(2);
+    });
+    it('JGE jumps when register is positive', () => {
+      const m = createMachine();
+      m.registers[0] = 3;
+      loadProgram(m, 'JGE r0 i3\nINC r1\nSTP\nDEC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(2);
+    });
+    it('JGE does not jump when register is negative', () => {
+      const m = createMachine();
+      m.registers[0] = -1;
+      loadProgram(m, 'JGE r0 i3\nINC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(1);
+    });
+    it('JLE jumps when register is zero', () => {
+      const m = createMachine();
+      m.registers[0] = 0;
+      loadProgram(m, 'JLE r0 i3\nINC r1\nSTP\nDEC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(2);
+    });
+    it('JLE jumps when register is negative', () => {
+      const m = createMachine();
+      m.registers[0] = -5;
+      loadProgram(m, 'JLE r0 i3\nINC r1\nSTP\nDEC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(2);
+    });
+    it('JLE does not jump when register is positive', () => {
+      const m = createMachine();
+      m.registers[0] = 1;
+      loadProgram(m, 'JLE r0 i3\nINC r1\nSTP');
+      execute(m);
+      expect(m.pc).toBe(1);
     });
   });
 

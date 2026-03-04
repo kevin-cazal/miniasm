@@ -1,7 +1,7 @@
 /**
  * MiniASM VM — vanilla JavaScript implementation.
  * All tuneable knobs (register count, memory size, …) come from config.js.
- * Instruction set: SET, INC, DEC, ISZ, ISN, STP, JMP  (+ unlockable ADD, SUB, MUL, POW, SWP).
+ * Instruction set: SET, INC, DEC, ISZ, ISN, STP, JMP  (+ unlockable ADD, SUB, MUL, POW, SWP, CMP, JEQ, JLT, JGT, JGE, JLE).
  */
 
 // ─── Read configuration (falls back to sensible defaults) ────────
@@ -94,13 +94,50 @@ var INST = {
     args: [['Register'], ['Register']],
     run: function (m, x, y) { m.registers[x.value] = Math.pow(m.registers[x.value], m.registers[y.value]); }
   },
+  CMP: {
+    args: [['Register'], ['Register']],
+    run: function (m, x, y) {
+      var diff = m.registers[x.value] - m.registers[y.value];
+      m.registers[x.value] = diff > 0 ? 1 : (diff < 0 ? -1 : 0);
+    }
+  },
   STP: {
     args: [],
     run: function (m) { m.halted = true; }
   },
   JMP: {
     args: [['InstructionNumber']],
-    run: function (m, line) { m.pc = line.value - 1; }  // source line numbers are 1-based
+    run: function (m, line) { m.pc = line.value - 1; m.jumped = true; }
+  },
+  JEQ: {
+    args: [['Register'], ['InstructionNumber']],
+    run: function (m, x, line) {
+      if (m.registers[x.value] === 0) { m.pc = line.value - 1; m.jumped = true; }
+    }
+  },
+  JLT: {
+    args: [['Register'], ['InstructionNumber']],
+    run: function (m, x, line) {
+      if (m.registers[x.value] < 0) { m.pc = line.value - 1; m.jumped = true; }
+    }
+  },
+  JGT: {
+    args: [['Register'], ['InstructionNumber']],
+    run: function (m, x, line) {
+      if (m.registers[x.value] > 0) { m.pc = line.value - 1; m.jumped = true; }
+    }
+  },
+  JGE: {
+    args: [['Register'], ['InstructionNumber']],
+    run: function (m, x, line) {
+      if (m.registers[x.value] >= 0) { m.pc = line.value - 1; m.jumped = true; }
+    }
+  },
+  JLE: {
+    args: [['Register'], ['InstructionNumber']],
+    run: function (m, x, line) {
+      if (m.registers[x.value] <= 0) { m.pc = line.value - 1; m.jumped = true; }
+    }
   }
 };
 
@@ -221,9 +258,10 @@ function loadProgram(machine, program) {
 function execute(machine) {
   var pair = machine.code[machine.pc];
   var instr = pair[1];
+  machine.jumped = false;
   INST[instr.opcode].run(machine, ...instr.operands);
   if (machine.halted) return;
-  if (instr.opcode !== 'JMP') {
+  if (!machine.jumped) {
     machine.pc += 1;
   }
 }

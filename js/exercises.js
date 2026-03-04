@@ -259,12 +259,104 @@
       ],
     },
 
-    // ─── Swaps & Rearrangement — Tutorial (14) ───────────────────────
+    // ─── Comparisons & Logic — CMP & Conditional Jumps (14–19) ──────
     {
       id: 14,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [13],
+      available: PRIMITIVES,
+      unlocks: 'CMP',
+      tests: [
+        { inputs: { r2: 5,  r3: 3  }, expected: { r0: 1  } },
+        { inputs: { r2: 3,  r3: 5  }, expected: { r0: -1 } },
+        { inputs: { r2: 4,  r3: 4  }, expected: { r0: 0  } },
+        { inputs: { r2: 0,  r3: 0  }, expected: { r0: 0  } },
+        { inputs: { r2: -2, r3: 3  }, expected: { r0: -1 } },
+      ],
+    },
+    {
+      id: 15,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [14],
+      available: PRIMITIVES,
+      unlocks: 'JEQ',
+      tests: [
+        { inputs: { r2: 5,  r3: 5  }, expected: { r0: 1 } },
+        { inputs: { r2: 3,  r3: 5  }, expected: { r0: 0 } },
+        { inputs: { r2: 0,  r3: 0  }, expected: { r0: 1 } },
+        { inputs: { r2: -1, r3: -1 }, expected: { r0: 1 } },
+        { inputs: { r2: 7,  r3: 3  }, expected: { r0: 0 } },
+      ],
+    },
+    {
+      id: 16,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [15],
+      available: PRIMITIVES,
+      unlocks: 'JLT',
+      tests: [
+        { inputs: { r2: 3,  r3: 5  }, expected: { r0: 1 } },
+        { inputs: { r2: 5,  r3: 3  }, expected: { r0: 0 } },
+        { inputs: { r2: 4,  r3: 4  }, expected: { r0: 0 } },
+        { inputs: { r2: -1, r3: 0  }, expected: { r0: 1 } },
+        { inputs: { r2: 0,  r3: -1 }, expected: { r0: 0 } },
+      ],
+    },
+    {
+      id: 17,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [16],
+      available: PRIMITIVES,
+      unlocks: 'JGE',
+      tests: [
+        { inputs: { r2: 5,  r3: 3  }, expected: { r0: 1 } },
+        { inputs: { r2: 3,  r3: 5  }, expected: { r0: 0 } },
+        { inputs: { r2: 4,  r3: 4  }, expected: { r0: 1 } },
+        { inputs: { r2: 0,  r3: 0  }, expected: { r0: 1 } },
+        { inputs: { r2: -1, r3: 0  }, expected: { r0: 0 } },
+      ],
+    },
+    {
+      id: 18,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [17],
+      available: PRIMITIVES,
+      unlocks: 'JGT',
+      tests: [
+        { inputs: { r2: 5,  r3: 3  }, expected: { r0: 1 } },
+        { inputs: { r2: 3,  r3: 5  }, expected: { r0: 0 } },
+        { inputs: { r2: 4,  r3: 4  }, expected: { r0: 0 } },
+        { inputs: { r2: 0,  r3: -1 }, expected: { r0: 1 } },
+        { inputs: { r2: 1,  r3: 0  }, expected: { r0: 1 } },
+      ],
+    },
+    {
+      id: 19,
+      category: 'comparisons',
+      type: 'challenge',
+      requires: [18],
+      available: PRIMITIVES,
+      unlocks: 'JLE',
+      tests: [
+        { inputs: { r2: 3,  r3: 5  }, expected: { r0: 1 } },
+        { inputs: { r2: 5,  r3: 3  }, expected: { r0: 0 } },
+        { inputs: { r2: 4,  r3: 4  }, expected: { r0: 1 } },
+        { inputs: { r2: -1, r3: 0  }, expected: { r0: 1 } },
+        { inputs: { r2: 0,  r3: -1 }, expected: { r0: 0 } },
+      ],
+    },
+
+    // ─── Swaps & Rearrangement — Tutorial (20) ───────────────────────
+    {
+      id: 20,
       category: 'swaps',
       type: 'tutorial',
-      requires: [13],
+      requires: [19],
       available: PRIMITIVES,
       unlocks: null,
       tests: [
@@ -273,12 +365,12 @@
         { inputs: { r2: 0,  r3: 99 }, expected: { r2: 99, r3: 0  } },
       ],
     },
-    // ─── Swaps & Rearrangement — Challenges (15–18) ──────────────────
+    // ─── Swaps & Rearrangement — Challenges (21–24) ──────────────────
     {
-      id: 15,
+      id: 21,
       category: 'swaps',
       type: 'challenge',
-      requires: [14],
+      requires: [20],
       available: PRIMITIVES,
       unlocks: 'SWP',
       tests: [
@@ -288,10 +380,10 @@
       ],
     },
     {
-      id: 16,
+      id: 22,
       category: 'swaps',
       type: 'challenge',
-      requires: [15],
+      requires: [21],
       available: PRIMITIVES,
       unlocks: null,
       tests: [
@@ -301,10 +393,10 @@
       ],
     },
     {
-      id: 17,
+      id: 23,
       category: 'swaps',
       type: 'challenge',
-      requires: [16],
+      requires: [22],
       available: PRIMITIVES,
       unlocks: null,
       tests: [
@@ -315,10 +407,10 @@
       ],
     },
     {
-      id: 18,
+      id: 24,
       category: 'swaps',
       type: 'challenge',
-      requires: [17],
+      requires: [23],
       available: PRIMITIVES,
       unlocks: null,
       tests: [

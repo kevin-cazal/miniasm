@@ -74,6 +74,12 @@
       tooltipSwp: 'SWP rX rY — swap the values in rX and rY',
       tooltipMul: 'MUL rX rY — rX = rX × rY  (rY is preserved)',
       tooltipPow: 'POW rX rY — rX = rX ^ rY  (rY is preserved)',
+      tooltipCmp: 'CMP rX rY — rX = sgn(rX − rY)\nSets rX to 1 (rX>rY), 0 (equal), or −1 (rX<rY).\nrY is preserved.',
+      tooltipJeq: 'JEQ rX iN — If rX == 0, jump to instruction N.\nOften used after CMP to jump when values were equal.',
+      tooltipJlt: 'JLT rX iN — If rX < 0, jump to instruction N.\nOften used after CMP to jump when first was less.',
+      tooltipJgt: 'JGT rX iN — If rX > 0, jump to instruction N.\nOften used after CMP to jump when first was greater.',
+      tooltipJge: 'JGE rX iN — If rX >= 0, jump to instruction N.\nOften used after CMP to jump when first was greater or equal.',
+      tooltipJle: 'JLE rX iN — If rX <= 0, jump to instruction N.\nOften used after CMP to jump when first was less or equal.',
       blockComment: '; comment',
       tooltipComment: 'A comment line. Ignored by the machine.\nUse comments to document your code.',
 
@@ -82,6 +88,7 @@
       catArithmetic: 'Arithmetic',
       catSwaps: 'Swaps',
       catControl: 'Control',
+      catComparisons: 'Comparisons',
       catComments: 'Comments',
 
       // ─── Challenge/tutorial text (keyed by id) ─────────────────
@@ -586,8 +593,187 @@
             '\n' +
             'STP\n',
         },
-        // ─── Swaps & Rearrangement — Tutorial (14) ─────────────────
+        // ─── Comparisons & Logic — CMP & Conditional Jumps (14–19) ──
         14: {
+          name: 'CMP',
+          title: 'Compare',
+          goal: 'Put sgn(r2 − r3) into r0: 1, 0, or −1',
+          description:
+            'You already know SUB (subtraction) and SGN (sign function).\n' +
+            'Now combine them into a single comparison!\n' +
+            '\n' +
+            'Write a program that:\n' +
+            '  • Sets r0 to 1 if r2 > r3\n' +
+            '  • Sets r0 to 0 if r2 = r3\n' +
+            '  • Sets r0 to −1 if r2 < r3\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 This is SUB followed by SGN!\n' +
+            '   Compute r2 − r3, then find its sign.',
+          hints: [
+            'Copy r2 into r0, then SUB r0 r3.\nNow r0 = r2 − r3. Apply the SGN pattern: check ISZ and ISN.',
+            'One approach:\n  SET r0 r2\n  SUB r0 r3\n  ISZ r0\n  JMP i6\n  STP\n  ISN r0\n  JMP i11\n  SET r0 #0\n  DEC r0\n  STP\n  SET r0 #1\n  STP',
+          ],
+          starterCode:
+            '; ─── Challenge: Compare ───\n' +
+            '; Goal: r0 = sgn(r2 − r3)\n' +
+            ';\n' +
+            '; Hint: SUB then SGN!\n' +
+            '; Inputs in r2 and r3. Store result in r0.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        15: {
+          name: 'JEQ',
+          title: 'Jump if Equal',
+          goal: 'Set r0 to 1 if r2 == r3, else 0',
+          description:
+            'Detect whether two values are equal.\n' +
+            '\n' +
+            'Write a program that:\n' +
+            '  • Sets r0 to 1 if r2 equals r3\n' +
+            '  • Sets r0 to 0 otherwise\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 You now have CMP! Use CMP to get the comparison result,\n' +
+            '   then check if it\'s zero with ISZ.',
+          hints: [
+            'CMP r0 r3 gives 0 when equal.\nUse ISZ to detect that and branch to set r0 = 1.',
+            'One approach:\n  SET r0 r2\n  CMP r0 r3\n  ISZ r0\n  JMP i7\n  SET r0 #1\n  STP\n  SET r0 #0\n  STP',
+          ],
+          starterCode:
+            '; ─── Challenge: Jump if Equal ───\n' +
+            '; Goal: r0 = 1 if r2 == r3, else 0\n' +
+            ';\n' +
+            '; You have CMP now!\n' +
+            '; Inputs in r2 and r3. Store result in r0.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        16: {
+          name: 'JLT',
+          title: 'Jump if Less Than',
+          goal: 'Set r0 to 1 if r2 < r3, else 0',
+          description:
+            'Detect whether one value is strictly less than another.\n' +
+            '\n' +
+            'Write a program that:\n' +
+            '  • Sets r0 to 1 if r2 < r3\n' +
+            '  • Sets r0 to 0 otherwise\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 Use CMP to get the comparison result,\n' +
+            '   then check if it\'s negative with ISN.',
+          hints: [
+            'CMP r0 r3 gives −1 when r2 < r3.\nUse ISN to detect negative and branch to set r0 = 1.',
+            'One approach:\n  SET r0 r2\n  CMP r0 r3\n  ISN r0\n  JMP i7\n  SET r0 #1\n  STP\n  SET r0 #0\n  STP',
+          ],
+          starterCode:
+            '; ─── Challenge: Jump if Less Than ───\n' +
+            '; Goal: r0 = 1 if r2 < r3, else 0\n' +
+            ';\n' +
+            '; You have CMP now!\n' +
+            '; Inputs in r2 and r3. Store result in r0.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        17: {
+          name: 'JGE',
+          title: 'Jump if Greater or Equal',
+          goal: 'Set r0 to 1 if r2 >= r3, else 0',
+          description:
+            'Detect whether one value is greater than or equal to another.\n' +
+            '\n' +
+            'Write a program that:\n' +
+            '  • Sets r0 to 1 if r2 ≥ r3\n' +
+            '  • Sets r0 to 0 otherwise\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 Think about it: r2 ≥ r3 is the opposite of r2 < r3.\n' +
+            '   Use CMP + ISN, but swap which branch gives 1 vs 0!',
+          hints: [
+            'CMP r0 r3 gives −1 when r2 < r3 (NOT ≥).\nISN skips when negative. So if it\'s NOT negative, r2 ≥ r3.',
+            'One approach:\n  SET r0 r2\n  CMP r0 r3\n  ISN r0\n  JMP i7\n  SET r0 #0\n  STP\n  SET r0 #1\n  STP',
+          ],
+          starterCode:
+            '; ─── Challenge: Jump if Greater or Equal ───\n' +
+            '; Goal: r0 = 1 if r2 >= r3, else 0\n' +
+            ';\n' +
+            '; You have CMP now!\n' +
+            '; Inputs in r2 and r3. Store result in r0.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        18: {
+          name: 'JGT',
+          title: 'Jump if Greater Than',
+          goal: 'Set r0 to 1 if r2 > r3, else 0',
+          description:
+            'Detect whether one value is strictly greater than another.\n' +
+            '\n' +
+            'Write a program that:\n' +
+            '  • Sets r0 to 1 if r2 > r3\n' +
+            '  • Sets r0 to 0 otherwise\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 This is trickier! r2 > r3 means "not equal AND not less".\n' +
+            '   After CMP, the result is 1 (positive) only when r2 > r3.\n' +
+            '   You need to check: NOT zero AND NOT negative.',
+          hints: [
+            'After CMP, check ISZ first (equal → 0), then check ISN (less → 0).\nIf neither: r2 > r3 → set r0 = 1.',
+            'One approach:\n  SET r0 r2\n  CMP r0 r3\n  ISZ r0\n  JMP i7\n  SET r0 #0\n  STP\n  ISN r0\n  JMP i11\n  SET r0 #0\n  STP\n  SET r0 #1\n  STP',
+          ],
+          starterCode:
+            '; ─── Challenge: Jump if Greater Than ───\n' +
+            '; Goal: r0 = 1 if r2 > r3, else 0\n' +
+            ';\n' +
+            '; You have CMP now!\n' +
+            '; Inputs in r2 and r3. Store result in r0.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        19: {
+          name: 'JLE',
+          title: 'Jump if Less or Equal',
+          goal: 'Set r0 to 1 if r2 <= r3, else 0',
+          description:
+            'Detect whether one value is less than or equal to another.\n' +
+            '\n' +
+            'Write a program that:\n' +
+            '  • Sets r0 to 1 if r2 ≤ r3\n' +
+            '  • Sets r0 to 0 otherwise\n' +
+            '  • Ends with STP\n' +
+            '\n' +
+            '💡 r2 ≤ r3 is the opposite of r2 > r3.\n' +
+            '   After CMP, the result is ≤ 0 (zero or negative).\n' +
+            '   Check: zero OR negative.',
+          hints: [
+            'After CMP, check ISZ (equal → 1), then ISN (less → 1).\nIf neither: r2 > r3 → set r0 = 0.',
+            'One approach:\n  SET r0 r2\n  CMP r0 r3\n  ISZ r0\n  JMP i7\n  SET r0 #1\n  STP\n  ISN r0\n  JMP i11\n  SET r0 #1\n  STP\n  SET r0 #0\n  STP',
+          ],
+          starterCode:
+            '; ─── Challenge: Jump if Less or Equal ───\n' +
+            '; Goal: r0 = 1 if r2 <= r3, else 0\n' +
+            ';\n' +
+            '; You have CMP now!\n' +
+            '; Inputs in r2 and r3. Store result in r0.\n' +
+            ';\n' +
+            '; Write your code below:\n' +
+            '\n' +
+            'STP\n',
+        },
+        // ─── Swaps & Rearrangement — Tutorial (20) ─────────────────
+        20: {
           name: 'Tutorial',
           title: 'The Spare Drawer',
           goal: 'Swap the values in r2 and r3 using a third register as temp',
@@ -613,8 +799,8 @@
             '\n' +
             'STP\n',
         },
-        // ─── Swaps & Rearrangement — Challenges (15–18) ─────────────
-        15: {
+        // ─── Swaps & Rearrangement — Challenges (21–24) ─────────────
+        21: {
           name: 'SWAP',
           title: 'Swap',
           goal: 'Swap r2 and r3 (r2 gets old r3, r3 gets old r2)',
@@ -631,7 +817,7 @@
             '\n' +
             'STP\n',
         },
-        16: {
+        22: {
           name: 'ROTATE3',
           title: 'Rotate three',
           goal: 'Rotate r1→r2→r3→r1 (cyclic shift)',
@@ -648,15 +834,15 @@
             '\n' +
             'STP\n',
         },
-        17: {
+        23: {
           name: 'SORT2',
           title: 'Sort two',
           goal: 'Put min(r2,r3) in r2 and max(r2,r3) in r3',
           description:
             'Sort the two values: when you halt, r2 must be ≤ r3.\n' +
-            'You have SUB and ISN for comparison; use a conditional swap.',
+            'You have CMP and conditional jumps for comparison, and SWP for swapping!',
           hints: [
-            'If r2 > r3, swap them. Compare with SUB then branch with ISN/JMP.',
+            'If r2 > r3, swap them. Use CMP + JLE (or JGT) to decide.',
           ],
           starterCode:
             '; ─── Challenge: Sort two ───\n' +
@@ -665,13 +851,13 @@
             '\n' +
             'STP\n',
         },
-        18: {
+        24: {
           name: 'SORT3',
           title: 'Sort three',
           goal: 'Sort r1 ≤ r2 ≤ r3 (ascending order)',
           description:
             'When you halt, r1 must be the smallest, r2 the middle, r3 the largest.\n' +
-            'Use comparisons (SUB, ISN) and swaps (SWP). Sort two pairs, then check again.',
+            'Use CMP and conditional jumps for comparisons, and SWP for swaps.',
           hints: [
             'Sort r1 and r2, then r2 and r3, then r1 and r2 again (like a tiny bubble sort).',
           ],

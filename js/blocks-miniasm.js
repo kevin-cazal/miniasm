@@ -320,6 +320,49 @@
     }
   };
 
+  Blockly.Blocks['miniasm_cmp'] = {
+    init: function() {
+      this.appendDummyInput()
+          .appendField(lineNumField(), 'LINE_NUM')
+          .appendField('CMP  r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'X')
+          .appendField(' r')
+          .appendField(new Blockly.FieldDropdown(regOptions), 'Y');
+      appendHelpLines(this, 'tooltipCmp');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(65);
+      this.setTooltip(T('tooltipCmp'));
+    }
+  };
+
+  // ----- Conditional jump blocks -----
+  var condJumps = [
+    { op: 'JEQ', tooltip: 'tooltipJeq' },
+    { op: 'JLT', tooltip: 'tooltipJlt' },
+    { op: 'JGT', tooltip: 'tooltipJgt' },
+    { op: 'JGE', tooltip: 'tooltipJge' },
+    { op: 'JLE', tooltip: 'tooltipJle' },
+  ];
+  condJumps.forEach(function(def) {
+    var blockType = 'miniasm_' + def.op.toLowerCase();
+    Blockly.Blocks[blockType] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField(lineNumField(), 'LINE_NUM')
+            .appendField(def.op + '  r')
+            .appendField(new Blockly.FieldDropdown(regOptions), 'REG')
+            .appendField(' to instruction ')
+            .appendField(new Blockly.FieldNumber(1, 1, 999), 'LINE');
+        appendHelpLines(this, def.tooltip);
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(290);
+        this.setTooltip(T(def.tooltip));
+      }
+    };
+  });
+
   // ----- Generator: block -> MiniASM line -----
   var generator = {};
   generator['miniasm_set'] = function(block) {
@@ -363,6 +406,24 @@
   };
   generator['miniasm_pow'] = function(block) {
     return 'POW r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
+  };
+  generator['miniasm_cmp'] = function(block) {
+    return 'CMP r' + (block.getFieldValue('X') || '0') + ' r' + (block.getFieldValue('Y') || '0');
+  };
+  generator['miniasm_jeq'] = function(block) {
+    return 'JEQ r' + (block.getFieldValue('REG') || '0') + ' i' + (block.getFieldValue('LINE') || 1);
+  };
+  generator['miniasm_jlt'] = function(block) {
+    return 'JLT r' + (block.getFieldValue('REG') || '0') + ' i' + (block.getFieldValue('LINE') || 1);
+  };
+  generator['miniasm_jgt'] = function(block) {
+    return 'JGT r' + (block.getFieldValue('REG') || '0') + ' i' + (block.getFieldValue('LINE') || 1);
+  };
+  generator['miniasm_jge'] = function(block) {
+    return 'JGE r' + (block.getFieldValue('REG') || '0') + ' i' + (block.getFieldValue('LINE') || 1);
+  };
+  generator['miniasm_jle'] = function(block) {
+    return 'JLE r' + (block.getFieldValue('REG') || '0') + ' i' + (block.getFieldValue('LINE') || 1);
   };
   generator['miniasm_comment'] = function(block) {
     return '; ' + (block.getFieldValue('TEXT') || '');
@@ -502,6 +563,12 @@
     if (op === 'SWP' && tokens.length >= 3) return { type: 'miniasm_swp', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
     if (op === 'MUL' && tokens.length >= 3) return { type: 'miniasm_mul', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
     if (op === 'POW' && tokens.length >= 3) return { type: 'miniasm_pow', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
+    if (op === 'CMP' && tokens.length >= 3) return { type: 'miniasm_cmp', X: tokens[1].replace(/^r/, ''), Y: tokens[2].replace(/^r/, '') };
+    if (['JEQ','JLT','JGT','JGE','JLE'].indexOf(op) !== -1 && tokens.length >= 3) {
+      var regVal = tokens[1].replace(/^r/, '');
+      var lineNum = tokens[2].charAt(0) === 'i' ? parseInt(tokens[2].slice(1), 10) : parseInt(tokens[2], 10);
+      return { type: 'miniasm_' + op.toLowerCase(), REG: regVal, LINE: (isNaN(lineNum) || lineNum < 1) ? 1 : lineNum };
+    }
     return null;
   }
 
@@ -548,14 +615,21 @@
     SWP: 'miniasm_swp',
     MUL: 'miniasm_mul',
     POW: 'miniasm_pow',
+    CMP: 'miniasm_cmp',
+    JEQ: 'miniasm_jeq',
+    JLT: 'miniasm_jlt',
+    JGT: 'miniasm_jgt',
+    JGE: 'miniasm_jge',
+    JLE: 'miniasm_jle',
   };
 
   // Category structure (opcodes grouped by category, with lang keys)
   var CATEGORIES = [
-    { nameKey: 'catData',       opcodes: ['SET'] },
-    { nameKey: 'catArithmetic', opcodes: ['INC', 'DEC', 'ADD', 'SUB', 'MUL', 'POW'] },
-    { nameKey: 'catSwaps',      opcodes: ['SWP'] },
-    { nameKey: 'catControl',    opcodes: ['ISZ', 'ISN', 'JMP', 'STP'] },
+    { nameKey: 'catData',        opcodes: ['SET'] },
+    { nameKey: 'catArithmetic',  opcodes: ['INC', 'DEC', 'ADD', 'SUB', 'MUL', 'POW'] },
+    { nameKey: 'catComparisons', opcodes: ['CMP', 'JEQ', 'JLT', 'JGT', 'JGE', 'JLE'] },
+    { nameKey: 'catSwaps',       opcodes: ['SWP'] },
+    { nameKey: 'catControl',     opcodes: ['ISZ', 'ISN', 'JMP', 'STP'] },
   ];
 
   /**

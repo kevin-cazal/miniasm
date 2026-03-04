@@ -4,7 +4,7 @@
 > turning challenges into "keys" that open new possibilities. The learner should
 > feel like they're building their own computer, one instruction at a time.
 
-**Implemented so far:** Arithmetic (tutorials 0–3, challenges ADD/MUL/POW), **Comparisons & Logic** (tutorials 7–8, challenges SUB/ABS/SGN/MIN/MAX), **Swaps & Rearrangement** (tutorial 14, challenges SWAP/ROTATE3/SORT2/SORT3). All other categories and the SYS/syscalls idea below are not yet implemented.
+**Implemented so far:** Arithmetic (tutorials 0–3, challenges ADD/MUL/POW), **Comparisons & Logic** (tutorials 7–8, challenges SUB/ABS/SGN/MIN/MAX/CMP/JEQ/JLT/JGE/JGT/JLE), **Swaps & Rearrangement** (tutorial 20, challenges SWAP/ROTATE3/SORT2/SORT3). All other categories and the SYS/syscalls idea below are not yet implemented.
 
 ---
 
@@ -14,7 +14,7 @@
 |--------|-------------|
 | **Primitives** (always available) | `SET`, `INC`, `DEC`, `ISZ`, `ISN`, `STP`, `JMP` |
 | **Unlocked via Arithmetic** | `ADD`, `MUL`, `POW` |
-| **Unlocked via Comparisons** | `SUB` |
+| **Unlocked via Comparisons** | `SUB`, `CMP`, `JEQ`, `JLT`, `JGE`, `JGT`, `JLE` |
 | **Unlocked via Swaps** | `SWP` |
 | **Proposed new** | `LDR`, `STR`, `DIV`, `MOD`, `SHL`, `SHR` |
 
@@ -23,7 +23,7 @@
 ## 📐 Category: Comparisons & Logic — **✅ Implemented**
 
 > *Prerequisite: complete Arithmetic*
-> *Key unlock: SUB*
+> *Key unlocks: SUB, CMP, JEQ, JLT, JGE, JGT, JLE*
 
 ### Tutorials
 - **"Going Down"** — Subtract a fixed amount using DEC; introduces negative registers — ✅
@@ -37,12 +37,22 @@
 | 3 | **SGN** | `r0 = sign(r2)` → −1, 0, or +1 | — | ✅ |
 | 4 | **MIN** | `r0 = min(r2, r3)` | — | ✅ |
 | 5 | **MAX** | `r0 = max(r2, r3)` | — | ✅ |
+| 6 | **CMP** | `r0 = sgn(r2 − r3)` (compare two values) | `CMP rX rY` | ✅ |
+| 7 | **JEQ** | `r0 = 1` if `r2 == r3`, else `0` | `JEQ rX iN` | ✅ |
+| 8 | **JLT** | `r0 = 1` if `r2 < r3`, else `0` | `JLT rX iN` | ✅ |
+| 9 | **JGE** | `r0 = 1` if `r2 >= r3`, else `0` | `JGE rX iN` | ✅ |
+| 10 | **JGT** | `r0 = 1` if `r2 > r3`, else `0` | `JGT rX iN` | ✅ |
+| 11 | **JLE** | `r0 = 1` if `r2 <= r3`, else `0` | `JLE rX iN` | ✅ |
+
+> *CMP is SUB + SGN in one instruction. The conditional jumps (JEQ, JLT, etc.) combine
+> CMP with ISZ/ISN into single instructions — the student earns each pattern before
+> getting the shortcut.*
 
 ---
 
 ## 🔀 Category: Swaps & Rearrangement — **✅ Implemented**
 
-> *Prerequisite: complete Arithmetic*
+> *Prerequisite: complete Comparisons & Logic (including conditional jumps)*
 > *Key unlock: SWP — a simple but powerful utility instruction*
 
 ### Tutorials
@@ -56,7 +66,7 @@
 | 3 | **SORT2** | Put min(r2,r3) in r2, max(r2,r3) in r3 (conditional swap) | — | ✅ |
 | 4 | **SORT3** | Sort r1 ≤ r2 ≤ r3 (only 3 values, but needs multiple comparisons) | — | ✅ |
 
-> *SORT3 with only primitives + SWP is a great intro to sorting logic.*
+> *SORT2/SORT3 benefit from CMP + conditional jumps unlocked in the previous category.*
 
 ---
 
@@ -237,15 +247,16 @@
 Arithmetic (existing)
     │
     ├─── Comparisons & Logic  ──→  Division & Remainders  ──→  Number Theory
-    │         unlocks SUB              unlocks DIV, MOD
-    │
-    ├─── Swaps & Rearrangement  ──┐
-    │         unlocks SWP          │
-    │                              ├──→  Sorting (capstone)
-    ├─── Memory & Pointers  ──────┤
-    │         unlocks LDR, STR     │
-    │              │               │
-    │              ├──→ Searching ─┘
+    │     unlocks SUB, CMP,          unlocks DIV, MOD
+    │     JEQ, JLT, JGE, JGT, JLE
+    │         │
+    │         └─── Swaps & Rearrangement  ──┐
+    │                   unlocks SWP          │
+    │                                        ├──→  Sorting (capstone)
+    ├─── Memory & Pointers  ────────────────┤
+    │         unlocks LDR, STR               │
+    │              │                         │
+    │              ├──→ Searching ───────────┘
     │              │
     │              ├──→ Data Structures
     │              │
@@ -264,7 +275,7 @@ Primitives:  SET  INC  DEC  ISZ  ISN  STP  JMP
                 │
 Arithmetic:     ├──→  ADD  ──→  MUL  ──→  POW
                 │
-Comparisons:    ├──→  SUB
+Comparisons:    ├──→  SUB  ──→  CMP  ──→  JEQ  ──→  JLT  ──→  JGE  ──→  JGT  ──→  JLE
                 │
 Swaps:          ├──→  SWP
                 │
@@ -277,7 +288,7 @@ Bitwise:        ├──→  SHL  +  SHR
 Syscalls:       └──→  SYS  (1 instruction, many call numbers)
 ```
 
-Total: 7 primitives + 11 unlockable = **18 instructions** in the full game.
+Total: 7 primitives + 17 unlockable = **24 instructions** in the full game.
 `SYS` alone unlocks ~10 syscalls — the biggest single unlock in the game.
 Each unlock genuinely enables new kinds of programs the learner couldn't write before.
 
