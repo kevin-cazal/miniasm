@@ -232,7 +232,6 @@
       this.appendDummyInput()
           .appendField('; ')
           .appendField(new Blockly.FieldTextInput('comment'), 'TEXT');
-      appendHelpLines(this, 'tooltipComment');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(60);
@@ -518,10 +517,16 @@
       field.textContent = String(info[key]);
       block.appendChild(field);
     }
-    // Inline comment → Blockly native comment bubble
+    // Inline comment → Blockly native comment bubble (hidden by default)
     if (info._comment) {
       var commentEl = document.createElement('comment');
-      commentEl.setAttribute('pinned', 'true');
+      commentEl.setAttribute('pinned', 'false');
+      // Size the bubble to fit the text
+      var textLen = info._comment.length;
+      var w = Math.max(120, Math.min(320, textLen * 8));
+      var h = Math.max(40, Math.ceil(textLen / 35) * 24 + 16);
+      commentEl.setAttribute('w', String(w));
+      commentEl.setAttribute('h', String(h));
       commentEl.textContent = info._comment;
       block.appendChild(commentEl);
     }
