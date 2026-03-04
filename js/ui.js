@@ -16,7 +16,7 @@
   var machine = null;
   var decorations = [];
   var currentMode = 'code';          // 'code' | 'blocks'
-  var monacoCodeBeforeBlocks = '';   // Monaco content (with comments) when last switching to blocks; restored when switching back
+  var monacoCodeBeforeBlocks = '';   // Monaco content when last switching to blocks (used by switchMode for exercise/sandbox transitions)
   var syncHighlightTimeout = null;
 
   var currentModeId = 'sandbox';     // 'sandbox' | exercise id (number)
@@ -421,7 +421,8 @@
       window.MiniASMBlocks.updateBlockLineNumbers(blocklyWorkspace);
     } else {
       if (blocklyWorkspace && editor) {
-        editor.setValue(monacoCodeBeforeBlocks);
+        var codeFromBlocks = window.MiniASMBlocks.blocksToCode(blocklyWorkspace);
+        editor.setValue(codeFromBlocks);
       }
       if (machine) {
         highlightPCLine();
