@@ -16,6 +16,7 @@
   var machine = null;
   var decorations = [];
   var currentMode = 'code';          // 'code' | 'blocks'
+  var monacoCodeBeforeBlocks = '';   // Monaco content (with comments) when last switching to blocks; restored when switching back
   var syncHighlightTimeout = null;
 
   var currentModeId = 'sandbox';     // 'sandbox' | exercise id (number)
@@ -397,6 +398,7 @@
     document.getElementById('btn-mode-code').classList.toggle('active', mode === 'code');
     document.getElementById('btn-mode-blocks').classList.toggle('active', mode === 'blocks');
     if (mode === 'blocks') {
+      if (editor) monacoCodeBeforeBlocks = editor.getValue();
       var allowed = getAllowedOpcodes();
       if (!blocklyWorkspace) {
         blocklyWorkspace = window.MiniASMBlocks.createWorkspace(
@@ -418,7 +420,7 @@
       window.MiniASMBlocks.updateBlockLineNumbers(blocklyWorkspace);
     } else {
       if (blocklyWorkspace && editor) {
-        editor.setValue(window.MiniASMBlocks.blocksToCode(blocklyWorkspace));
+        editor.setValue(monacoCodeBeforeBlocks);
       }
       if (machine) {
         highlightPCLine();
@@ -609,6 +611,7 @@
     // Load code for new mode
     var code = loadCodeForMode(modeId);
     if (editor) editor.setValue(code);
+    monacoCodeBeforeBlocks = code;
 
     // Reset machine
     machine = createMachine();
