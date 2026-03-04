@@ -74,12 +74,15 @@
       tooltipSwp: 'SWP rX rY — swap the values in rX and rY',
       tooltipMul: 'MUL rX rY — rX = rX × rY  (rY is preserved)',
       tooltipPow: 'POW rX rY — rX = rX ^ rY  (rY is preserved)',
+      blockComment: '; comment',
+      tooltipComment: 'A comment line. Ignored by the machine.\nUse comments to document your code.',
 
       // ─── Blockly category names ───────────────────────────────
       catData: 'Data',
       catArithmetic: 'Arithmetic',
       catSwaps: 'Swaps',
       catControl: 'Control',
+      catComments: 'Comments',
 
       // ─── Challenge/tutorial text (keyed by id) ─────────────────
       exercises: {

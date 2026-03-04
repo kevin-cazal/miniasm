@@ -134,6 +134,21 @@ function setValue(m, dest, value) {
   }
 }
 
+// ─── Comment stripping ───────────────────────────────────────────
+
+/**
+ * Strip inline comment from a line.
+ * Returns the instruction part only (trimmed).
+ * "; full-line comment" → ""
+ * "INC r2 ; bump"       → "INC r2"
+ * "INC r2"              → "INC r2"
+ */
+function stripComment(line) {
+  var idx = line.indexOf(';');
+  if (idx === -1) return line.trim();
+  return line.slice(0, idx).trim();
+}
+
 // ─── Instruction parsing ─────────────────────────────────────────
 
 function parseInstruction(line) {
@@ -189,9 +204,9 @@ function loadProgram(machine, program) {
   var lines = [];
   var lineNumbers = [];
   for (var i = 0; i < allLines.length; i++) {
-    var line = allLines[i];
-    if (line && !line.startsWith(';')) {
-      lines.push(line);
+    var stripped = stripComment(allLines[i]);
+    if (stripped) {
+      lines.push(stripped);
       lineNumbers.push(i + 1);
     }
   }
@@ -267,6 +282,7 @@ if (typeof module !== 'undefined' && module.exports) {
     execute: execute,
     run: run,
     parseInstruction: parseInstruction,
+    stripComment: stripComment,
     printCode: printCode,
     printRegisters: printRegisters,
     printMemory: printMemory,
@@ -284,6 +300,7 @@ if (typeof window !== 'undefined') {
     execute: execute,
     run: run,
     parseInstruction: parseInstruction,
+    stripComment: stripComment,
     printCode: printCode,
     printRegisters: printRegisters,
     printMemory: printMemory,
